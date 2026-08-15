@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.concurrent.*;
 
@@ -36,6 +37,9 @@ public class IRCClientMain {
 
     private boolean loggedIn;
 
+    public boolean debug;
+
+    // TODO: input validation
     public IRCClientMain(String addr, int port, String username, String password, String server, IRCClientEventHandler eventHandler) {
         this.addr = addr;
         this.port = port;
@@ -47,25 +51,22 @@ public class IRCClientMain {
         this.loggedIn = false;
     }
 
-    public void start() {
+    public void start() throws IOException {
+        if (this.running) throw new IllegalStateException("Client is already running");
         this.running = true;
 
-        try {
-            socket = new Socket(addr, port);
+        socket = new Socket(addr, port);
 
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new PrintWriter(socket.getOutputStream(), true);
 
-            startReaderThread();
+        startReaderThread();
 
-            startWriterThread();
+        startWriterThread();
 
-            startTickLoop();
+        startTickLoop();
 
-            doLogin();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        doLogin();
     }
 
     private void startReaderThread() {
@@ -73,23 +74,19 @@ public class IRCClientMain {
             try {
                 String line;
                 while (running && (line = in.readLine()) != null) {
-                    try {
-                        JsonObject root = JsonParser.parseString(line).getAsJsonObject();
-                        Packet packet = PacketFactory.createPacket(root);
+                    JsonObject root = JsonParser.parseString(line).getAsJsonObject();
+                    Packet packet = PacketFactory.createPacket(root);
 
-                        if (packet instanceof DisconnectS2CPacket disconnectS2CPacket) {
-                            eventHandler.onKick(this, disconnectS2CPacket.getReason());
-                            this.disconnect();
-                            return;
-                        }
-
-                        incomingQueue.offer(packet);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if (packet instanceof DisconnectS2CPacket disconnectS2CPacket) {
+                        eventHandler.onKick(this, disconnectS2CPacket.getReason());
+                        this.disconnect();
+                        return;
                     }
+
+                    incomingQueue.offer(packet);
                 }
-            } catch (IOException e) {
-                if (running) e.printStackTrace();
+            } catch (Exception exception) {
+                System.out.println("Error with reading packet");
             } finally {
                 disconnect();
             }
@@ -129,7 +126,7 @@ public class IRCClientMain {
                     if (!cancelled) this.handlePacket(incoming);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                disconnect();
             }
         }, 0, 50, TimeUnit.MILLISECONDS);
     }
@@ -167,6 +164,7 @@ public class IRCClientMain {
     }
 
     public void sendPacket(Packet packet) {
+        if (socket == null || !socket.isConnected()) throw new IllegalStateException("Socket not open on sendPacket");
         if (eventHandler.onPacketSend(this, packet)) return; // cancelled
         outgoingQueue.offer(packet);
     }
@@ -180,10 +178,12 @@ public class IRCClientMain {
         eventHandler.onDisconnect(this);
         running = false;
         tickExecutor.shutdownNow();
-        System.out.println("Client disconnecting!");
 
-        if (socket != null && socket.isConnected() && out != null) {
-            out.println(PacketFactory.serializePacket(new DisconnectC2SPacket()));
+        try {
+            if (socket != null && socket.isConnected() && out != null) {
+                out.println(PacketFactory.serializePacket(new DisconnectC2SPacket()));
+            }
+        } catch (Exception ignored) {
         }
 
         try { if (in != null) in.close(); } catch (IOException ignored) {}

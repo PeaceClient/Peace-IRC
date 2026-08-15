@@ -32,7 +32,7 @@ public class IRCServerMain {
     }
 
     public void run() throws IOException {
-        if (running) return;
+        if (running) throw new IllegalStateException("Server is already running");
         running = true;
 
         tickExecutor.scheduleAtFixedRate(this::tick, 0, 50, TimeUnit.MILLISECONDS);
