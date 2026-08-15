@@ -6,14 +6,14 @@ import com.peace.packets.PacketId;
 import com.peace.util.Vec2i;
 
 @PacketId(0x04)
-public class UpdatePositionC2SPacket implements Packet {
+public class PlayerPositionC2SPacket implements Packet {
     Vec2i position;
 
-    public UpdatePositionC2SPacket(Vec2i position) {
+    public PlayerPositionC2SPacket(Vec2i position) {
         this.position = position;
     }
 
-    public UpdatePositionC2SPacket(JsonObject jsonObject) {
+    public PlayerPositionC2SPacket(JsonObject jsonObject) {
         int x = jsonObject.get("x").getAsInt();
         int z = jsonObject.get("z").getAsInt();
         this.position = new Vec2i(x, z);

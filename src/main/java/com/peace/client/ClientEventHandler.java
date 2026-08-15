@@ -13,7 +13,7 @@ public interface ClientEventHandler {
     void postLogin(ClientMain main);
     // called on self
     void onProgressUpdate(ClientMain main, String username, BlockPos pos, float breakingProgress);
-    void onChatMessage(ClientMain main, String message); // handle announces etc
+    void onServerMessage(ClientMain main, String message); // handle announces etc
     void onIrcChat(ClientMain main, String sender, String message); // irc chat
     void onPositionReceive(ClientMain main, String username, Vec2i position);
     void tick(ClientMain main);

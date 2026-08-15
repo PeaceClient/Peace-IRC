@@ -18,6 +18,10 @@ public class Vec2i {
         return z;
     }
 
+    public double squaredDistanceTo(Vec2i pos) {
+        return (pos.getX()*pos.getX() - this.getX()*this.getX()) + (pos.getZ()*pos.getZ() - this.getZ()*this.getZ());
+    }
+
     @Override
     public String toString() {
         return String.format("{%d, %d}", getX(), getZ());

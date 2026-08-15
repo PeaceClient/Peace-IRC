@@ -3,7 +3,6 @@ package com.peace.server;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
@@ -20,6 +19,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerThread implements Runnable {
     private Socket clientSocket;
@@ -27,16 +28,21 @@ public class ServerThread implements Runnable {
     private PrintWriter out;
     private BufferedReader in;
 
+    private final BlockingQueue<Packet> outgoingQueue = new LinkedBlockingQueue<>();
+    private volatile boolean running;
 
     private boolean loggedIn;
     // TODO: timeout after 10sec if !loggedIn
     private long connectMillis;
 
-    private String playerName;
-    private @Nullable Vec2i position;
+    private String username;
+
+    private volatile boolean positionChanged;
+    private volatile @Nullable Vec2i position;
     // Null when not breaking!
-    private @Nullable BlockPos breakingPos;
-    private float breakingProgress;
+    private volatile boolean breakingChanged;
+    private volatile @Nullable BlockPos breakingPos;
+    private volatile float breakingProgress;
 
 
     public ServerThread(Socket clientSocket, ServerMain serverMain) {
@@ -53,51 +59,68 @@ public class ServerThread implements Runnable {
      */
     @Override
     public void run() {
+        this.running = true;
+
         try {
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+            startWriterThread();
 
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
                 System.out.println("Recieved: " + inputLine);
 
-                try {
-                    JsonElement element = JsonParser.parseString(inputLine);
+                JsonElement element = JsonParser.parseString(inputLine);
 
-                    JsonObject root = element.getAsJsonObject();
+                JsonObject root = element.getAsJsonObject();
 
-                    Packet packet = PacketFactory.createPacket(root);
-                    if (loggedIn) handlePacket(packet);
-                    else {
-                        if (packet instanceof LoginC2SPacket loginC2SPacket) {
-                            // Password is correct!
-                            if (Objects.equals(loginC2SPacket.getPassword(), serverMain.password)) {
-                                if (serverMain.nameMap.containsKey(this.playerName)) {
-                                    System.out.println("Player trying to connect with existing username!");
-                                    sendPacket(new LoginS2CPacket(false));
-                                    this.disconnect();
-                                    return;
-                                } else {
-                                    System.out.println("Player " + loginC2SPacket.getUsername() + " logged in!");
-                                    this.loggedIn = true;
-                                    this.playerName = loginC2SPacket.getUsername();
-                                    serverMain.nameMap.put(this.playerName, this);
+                Packet packet = PacketFactory.createPacket(root);
+                if (loggedIn) handlePacket(packet);
+                else {
+                    if (!(packet instanceof LoginC2SPacket loginC2SPacket)) return;
+                    if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.password)) return;
 
-                                    sendPacket(new LoginS2CPacket(true));
-                                }
-                            }
-                        }
+                    if (serverMain.nameMap.containsKey(this.username)) {
+                        System.out.println("Player trying to connect with existing username!");
+                        sendPacket(new LoginS2CPacket(false));
+                        this.disconnect();
+                        return;
+                    } else {
+                        System.out.println("Player " + loginC2SPacket.getUsername() + " logged in!");
+                        this.loggedIn = true;
+                        this.username = loginC2SPacket.getUsername();
+                        serverMain.nameMap.put(this.username, this);
+
+                        sendPacket(new LoginS2CPacket(true));
                     }
-                } catch (JsonSyntaxException | UnsupportedOperationException | IllegalStateException | IllegalArgumentException exception) {
-                    System.out.println("Client sent non-valid json!");
-                    disconnect();
-                    return;
                 }
             }
-
         } catch (Exception e) {
+            System.out.println("Failure in handling packets");
             e.printStackTrace();
+        } finally {
+            disconnect();
         }
+    }
+
+    private void startWriterThread() {
+        Thread writer = new Thread(() -> {
+            try {
+                while (running) {
+                    Packet packet = outgoingQueue.take(); // blocks
+                    if (clientSocket != null && !clientSocket.isClosed() && out != null) {
+                        out.println(PacketFactory.serializePacket(packet));
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                disconnect();
+            }
+        }, "Server-Writer-" + clientSocket.getPort());
+        writer.setDaemon(true);
+        writer.start();
     }
 
     public void handlePacket(Packet packet) {
@@ -117,9 +140,13 @@ public class ServerThread implements Runnable {
             sendPacket(new PlayerPositionS2CPacket(otherThread.position, requestedUser));
             return;
         }
-        if (packet instanceof UpdatePositionC2SPacket updatePositionC2SPacket) {
+        if (packet instanceof PlayerPositionC2SPacket updatePositionC2SPacket) {
+            Vec2i ownPosition = this.position;
+            if (updatePositionC2SPacket.getPosition() == null) return;
+            // less than 3 blocks, prevents spam
+            if (ownPosition != null && ownPosition.squaredDistanceTo(updatePositionC2SPacket.getPosition()) < 3*3) return;
             this.position = updatePositionC2SPacket.getPosition();
-            System.out.println("Refreshed player position!");
+            this.positionChanged = true;
             return;
         }
         if (packet instanceof BreakingC2SPacket breakingC2SPacket) {
@@ -135,21 +162,51 @@ public class ServerThread implements Runnable {
     }
 
     public void sendPacket(Packet packet) {
-        if (clientSocket.isConnected() && out != null) {
-            out.println(PacketFactory.serializePacket(packet));
+        if (running && !outgoingQueue.offer(packet)) {
+            System.out.println("Issue with sending packet!");
         }
     }
 
+    public boolean shouldUpdatePositionAndReset() {
+        boolean shouldUpdate = this.positionChanged;
+        this.positionChanged = false;
+        return shouldUpdate;
+    }
+
+    public Vec2i getPosition() {
+        return this.position;
+    }
+
+    public boolean shouldUpdateBreakingAndReset() {
+        boolean shouldUpdate = this.breakingChanged;
+        this.breakingChanged = false;
+        return shouldUpdate;
+    }
+
+    public BlockPos getBreakingPosition() {
+        return this.breakingPos;
+    }
+
+    public float getBreakingProgress() {
+        return this.breakingProgress;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+
     public void disconnect() {
+        this.running = false;
         try {
-            serverMain.nameMap.remove(this.playerName);
+            serverMain.nameMap.remove(this.username);
             if (in != null) in.close();
             if (out != null) out.close();
             in = null;
             out = null;
             if (!clientSocket.isClosed()) clientSocket.close();
             clientSocket = null;
-            System.out.println("Closed connection for player: " + (playerName == null ? "None" : playerName));
+            System.out.println("Closed connection for player: " + (username == null ? "None" : username));
         } catch (IOException ignored) {
         }
     }

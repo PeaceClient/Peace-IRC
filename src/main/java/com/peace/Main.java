@@ -18,8 +18,10 @@ public class Main {
         });
         serverMainThread.start();
 
-        ClientMain clientMain = new ClientMain("localhost", 8080, "TestPassword", new DebugEventHandler());
-        Thread clientTestThread = new Thread(clientMain::run);
-        clientTestThread.start();
+        ClientMain clientMain1 = new ClientMain("localhost", 8080, "Player1", "TestPassword", new DebugEventHandler());
+        clientMain1.start();
+
+        ClientMain clientMain2 = new ClientMain("localhost", 8080, "Player2", "TestPassword", new DebugEventHandler());
+        clientMain2.start();
     }
 }

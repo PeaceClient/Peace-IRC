@@ -16,6 +16,10 @@ public class ServerMessageS2CPacket implements Packet {
         this.message = jsonObject.get("message").getAsString();
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     @Override
     public JsonObject toJson() {
         JsonObject object = new JsonObject();

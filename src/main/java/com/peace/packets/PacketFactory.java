@@ -16,8 +16,9 @@ public class PacketFactory {
         register(BreakingC2SPacket.class);
         register(LoginC2SPacket.class);
         register(RequestPlayerPositionC2SPacket.class);
-        register(UpdatePositionC2SPacket.class);
+        register(PlayerPositionC2SPacket.class);
 
+        register(BreakingS2CPacket.class);
         register(LoginS2CPacket.class);
         register(PlayerPositionS2CPacket.class);
         register(ServerMessageS2CPacket.class);
