@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
+import com.peace.packets.s2c.ChatS2CPacket;
 import com.peace.packets.s2c.LoginS2CPacket;
 import com.peace.packets.s2c.PlayerPositionS2CPacket;
 import com.peace.packets.s2c.ServerMessageS2CPacket;
@@ -24,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerThread implements Runnable {
     private Socket clientSocket;
-    private ServerMain serverMain;
+    private final ServerMain serverMain;
     private PrintWriter out;
     private BufferedReader in;
 
@@ -44,6 +45,8 @@ public class ServerThread implements Runnable {
     private volatile @Nullable BlockPos breakingPos;
     private volatile float breakingProgress;
 
+    // 1 second cooldown
+    private volatile long lastChatMessage;
 
     public ServerThread(Socket clientSocket, ServerMain serverMain) {
         this.clientSocket = clientSocket;
@@ -77,24 +80,7 @@ public class ServerThread implements Runnable {
 
                 Packet packet = PacketFactory.createPacket(root);
                 if (loggedIn) handlePacket(packet);
-                else {
-                    if (!(packet instanceof LoginC2SPacket loginC2SPacket)) return;
-                    if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.password)) return;
-
-                    if (serverMain.nameMap.containsKey(this.username)) {
-                        System.out.println("Player trying to connect with existing username!");
-                        sendPacket(new LoginS2CPacket(false));
-                        this.disconnect();
-                        return;
-                    } else {
-                        System.out.println("Player " + loginC2SPacket.getUsername() + " logged in!");
-                        this.loggedIn = true;
-                        this.username = loginC2SPacket.getUsername();
-                        serverMain.nameMap.put(this.username, this);
-
-                        sendPacket(new LoginS2CPacket(true));
-                    }
-                }
+                else handlePacketNotLoggedIn(packet);
             }
         } catch (Exception e) {
             System.out.println("Failure in handling packets");
@@ -123,6 +109,24 @@ public class ServerThread implements Runnable {
         writer.start();
     }
 
+    private void handlePacketNotLoggedIn(Packet packet) {
+        if (!(packet instanceof LoginC2SPacket loginC2SPacket)) return;
+        if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.getConfig().getPassword())) return;
+
+        if (serverMain.nameMap.containsKey(this.username)) {
+            System.out.println("Player trying to connect with existing username!");
+            sendPacket(new LoginS2CPacket(false));
+            this.disconnect();
+        } else {
+            System.out.println("Player " + loginC2SPacket.getUsername() + " logged in!");
+            this.loggedIn = true;
+            this.username = loginC2SPacket.getUsername();
+            serverMain.nameMap.put(this.username, this);
+
+            sendPacket(new LoginS2CPacket(true));
+        }
+    }
+
     public void handlePacket(Packet packet) {
         if (packet instanceof RequestPlayerPositionC2SPacket requestPlayerPositionC2SPacket) {
             String requestedUser = requestPlayerPositionC2SPacket.getUsername();
@@ -143,8 +147,11 @@ public class ServerThread implements Runnable {
         if (packet instanceof PlayerPositionC2SPacket updatePositionC2SPacket) {
             Vec2i ownPosition = this.position;
             if (updatePositionC2SPacket.getPosition() == null) return;
-            // less than 3 blocks, prevents spam
-            if (ownPosition != null && ownPosition.squaredDistanceTo(updatePositionC2SPacket.getPosition()) < 3*3) return;
+
+            // less than N blocks, prevents spam
+            double d = serverMain.getConfig().getPositionUpdateDistance();
+            if (ownPosition != null && ownPosition.squaredDistanceTo(updatePositionC2SPacket.getPosition()) < d*d) return;
+
             this.position = updatePositionC2SPacket.getPosition();
             this.positionChanged = true;
             return;
@@ -154,6 +161,19 @@ public class ServerThread implements Runnable {
             this.breakingProgress = breakingC2SPacket.getBreakingProgress();
             System.out.println("Refreshed breaking pos!");
             return;
+        }
+        if (packet instanceof ChatC2SPacket chatC2SPacket) {
+            long now = System.currentTimeMillis();
+            long cooldown = serverMain.getConfig().getChatCooldownMillis();
+            if (now - lastChatMessage < cooldown) {
+                long msLeft = cooldown - (now-lastChatMessage);
+                sendPacket(new ServerMessageS2CPacket(String.format("You are on cooldown for %.1f seconds!", (double)(msLeft) / 1000)));
+            } else {
+                lastChatMessage = now;
+                for (ServerThread player : serverMain.nameMap.values()) {
+                    player.sendPacket(new ChatS2CPacket(this.username, chatC2SPacket.getMessage()));
+                }
+            }
         }
     }
 
@@ -173,7 +193,7 @@ public class ServerThread implements Runnable {
         return shouldUpdate;
     }
 
-    public Vec2i getPosition() {
+    public @Nullable Vec2i getPosition() {
         return this.position;
     }
 

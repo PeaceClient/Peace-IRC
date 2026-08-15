@@ -1,6 +1,7 @@
 package com.peace;
 
 import com.peace.client.ClientMain;
+import com.peace.server.ServerConfig;
 import com.peace.server.ServerMain;
 
 import java.io.IOException;
@@ -9,9 +10,14 @@ import java.io.IOException;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
+        ServerConfig config = new ServerConfig.Builder()
+                .host("localhost")
+                .port(8080)
+                .password("TestPassword")
+                .build();
         Thread serverMainThread = new Thread(() -> {
             try {
-                new ServerMain(8080, "TestPassword");
+                new ServerMain(config);
             } catch (IOException e) {
                 e.printStackTrace();
             }

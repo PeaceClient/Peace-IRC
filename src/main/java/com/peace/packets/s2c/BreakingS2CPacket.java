@@ -34,6 +34,18 @@ public class BreakingS2CPacket implements Packet {
         }
     }
 
+    public @Nullable BlockPos getPosition() {
+        return position;
+    }
+
+    public float getBreakingProgress() {
+        return breakingProgress;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
     @Override
     public JsonObject toJson() {
         JsonObject object = new JsonObject();

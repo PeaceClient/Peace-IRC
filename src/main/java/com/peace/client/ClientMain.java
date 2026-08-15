@@ -5,9 +5,7 @@ import com.google.gson.JsonParser;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.LoginC2SPacket;
-import com.peace.packets.s2c.LoginS2CPacket;
-import com.peace.packets.s2c.PlayerPositionS2CPacket;
-import com.peace.packets.s2c.ServerMessageS2CPacket;
+import com.peace.packets.s2c.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -130,6 +128,7 @@ public class ClientMain {
                 if (loginS2CPacket.wasSuccessful()) {
                     System.out.println("Logged in!");
                     loggedIn = true;
+                    eventHandler.postLogin(this);
                 } else {
                     System.out.println("Server rejected login!");
                     this.disconnect();
@@ -138,12 +137,20 @@ public class ClientMain {
             return;
         }
 
+        if (packet instanceof BreakingS2CPacket breakingS2CPacket) {
+            eventHandler.onProgressUpdate(this, breakingS2CPacket.getUsername(), breakingS2CPacket.getPosition(), breakingS2CPacket.getBreakingProgress());
+        }
+
         if (packet instanceof PlayerPositionS2CPacket playerPositionS2CPacket) {
             eventHandler.onPositionReceive(this, playerPositionS2CPacket.getUsername(), playerPositionS2CPacket.getPosition());
         }
 
         if (packet instanceof ServerMessageS2CPacket serverMessageS2CPacket) {
             eventHandler.onServerMessage(this, serverMessageS2CPacket.getMessage());
+        }
+
+        if (packet instanceof ChatS2CPacket chatS2CPacket) {
+            eventHandler.onIrcChat(this, chatS2CPacket.getUsername(), chatS2CPacket.getMessage());
         }
     }
 

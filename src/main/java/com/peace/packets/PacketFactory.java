@@ -14,11 +14,13 @@ public class PacketFactory {
 
     static {
         register(BreakingC2SPacket.class);
+        register(ChatC2SPacket.class);
         register(LoginC2SPacket.class);
         register(RequestPlayerPositionC2SPacket.class);
         register(PlayerPositionC2SPacket.class);
 
         register(BreakingS2CPacket.class);
+        register(ChatS2CPacket.class);
         register(LoginS2CPacket.class);
         register(PlayerPositionS2CPacket.class);
         register(ServerMessageS2CPacket.class);

@@ -2,27 +2,16 @@ package com.peace;
 
 import com.peace.client.ClientEventHandler;
 import com.peace.client.ClientMain;
-import com.peace.packets.Packet;
+import com.peace.packets.c2s.ChatC2SPacket;
 import com.peace.packets.c2s.PlayerPositionC2SPacket;
-import com.peace.packets.s2c.PlayerPositionS2CPacket;
 import com.peace.util.BlockPos;
 import com.peace.util.Vec2i;
 
 public class DebugEventHandler implements ClientEventHandler {
 
     @Override
-    public boolean onPacketSend(ClientMain main, Packet packet) {
-        return false;
-    }
-
-    @Override
-    public boolean onPacketReceive(ClientMain main, Packet packet) {
-        return false;
-    }
-
-    @Override
     public void postLogin(ClientMain main) {
-        System.out.println("Logged in");
+        System.out.println("Called from post-login!");
     }
 
     @Override
@@ -32,12 +21,12 @@ public class DebugEventHandler implements ClientEventHandler {
 
     @Override
     public void onServerMessage(ClientMain main, String message) {
-        System.out.println("Chat message: " + message);
+        System.out.println("Server message (current client: " + main.getUsername() + "): " + message);
     }
 
     @Override
     public void onIrcChat(ClientMain main, String sender, String message) {
-        System.out.println("IRC message: " + sender + " - " + message);
+        System.out.println("IRC message (current client: " + main.getUsername() + "): " + sender + " - " + message);
     }
 
     @Override
@@ -51,6 +40,11 @@ public class DebugEventHandler implements ClientEventHandler {
         tick++;
         if (tick == 60) {
             if (main.getUsername().equals("Player1")) main.sendPacket(new PlayerPositionC2SPacket(new Vec2i(100, 100)));
+        }
+
+        if (tick == 100) {
+            if (main.getUsername().equals("Player2")) main.sendPacket(new ChatC2SPacket("hi"));
+            if (main.getUsername().equals("Player2")) main.sendPacket(new ChatC2SPacket("hi"));
         }
     }
 }

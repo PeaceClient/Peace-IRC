@@ -17,19 +17,18 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerMain {
     public final Map<String, ServerThread> nameMap = new HashMap<>();
-    protected final String password;
-    private final int port;
+
+    private final ServerConfig config;
 
     private final ScheduledExecutorService tickExecutor = Executors.newSingleThreadScheduledExecutor();
 
-    public ServerMain(int port, String password) throws IOException {
-        this.password = password;
-        this.port = port;
+    public ServerMain(ServerConfig config) throws IOException {
+        this.config = config;
 
         tickExecutor.scheduleAtFixedRate(this::tick, 0, 50, TimeUnit.MILLISECONDS);
 
-        ServerSocket socket = new ServerSocket(port);
-        System.out.println("Server up on port: " + port);
+        ServerSocket socket = new ServerSocket(config.getPort());
+        System.out.println("Server up on port: " + config.getPort());
 
         while (true) {
             Socket clientSocket = socket.accept();
@@ -66,6 +65,10 @@ public class ServerMain {
                 }
             }
         }
+    }
+
+    public ServerConfig getConfig() {
+        return this.config;
     }
 
     public void shutdown() {
