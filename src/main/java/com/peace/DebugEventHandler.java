@@ -1,42 +1,37 @@
 package com.peace;
 
-import com.peace.client.ClientEventHandler;
-import com.peace.client.ClientMain;
+import com.peace.client.IRCClientEventHandler;
+import com.peace.client.IRCClientMain;
 import com.peace.packets.c2s.ChatC2SPacket;
 import com.peace.packets.c2s.PlayerPositionC2SPacket;
 import com.peace.util.BlockPos;
 import com.peace.util.Vec2i;
 
-public class DebugEventHandler implements ClientEventHandler {
+public class DebugEventHandler implements IRCClientEventHandler {
 
     @Override
-    public void postLogin(ClientMain main) {
+    public void postLogin(IRCClientMain main) {
         System.out.println("Called from post-login!");
     }
 
     @Override
-    public void onProgressUpdate(ClientMain main, String username, BlockPos pos, float breakingProgress) {
-        System.out.println("Progress update");
+    public void onProgressUpdate(IRCClientMain main, String username, BlockPos pos, float breakingProgress) {
+        System.out.println("Progress update at pos: " + pos + " with prog " + breakingProgress);
     }
 
     @Override
-    public void onServerMessage(ClientMain main, String message) {
+    public void onServerMessage(IRCClientMain main, String message) {
         System.out.println("Server message (current client: " + main.getUsername() + "): " + message);
     }
 
     @Override
-    public void onIrcChat(ClientMain main, String sender, String message) {
+    public void onIrcChat(IRCClientMain main, String sender, String message) {
         System.out.println("IRC message (current client: " + main.getUsername() + "): " + sender + " - " + message);
-    }
-
-    @Override
-    public void onPositionReceive(ClientMain main, String username, Vec2i position) {
-        System.out.println("Received position by user: " + username + " at " + position + " at client: " + main.getUsername());
     }
 
     int tick = 0;
     @Override
-    public void tick(ClientMain main) {
+    public void tick(IRCClientMain main) {
         tick++;
         if (tick == 60) {
             if (main.getUsername().equals("Player1")) main.sendPacket(new PlayerPositionC2SPacket(new Vec2i(100, 100)));

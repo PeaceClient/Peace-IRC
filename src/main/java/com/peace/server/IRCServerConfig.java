@@ -1,6 +1,6 @@
 package com.peace.server;
 
-public class ServerConfig {
+public class IRCServerConfig {
     private final String host;
     private final int port;
     private final String password;
@@ -9,7 +9,7 @@ public class ServerConfig {
     private final long chatCooldownMillis;
     private final double positionUpdateDistance;
 
-    private ServerConfig(Builder builder) {
+    private IRCServerConfig(Builder builder) {
         this.host = builder.host;
         this.port = builder.port;
         this.password = builder.password;
@@ -30,7 +30,7 @@ public class ServerConfig {
         private int port;
         private String password;
 
-        private float timeoutSeconds = 30.0f;
+        private float timeoutSeconds = 5f;
         private long chatCooldownMillis = 500;
         private double positionUpdateDistance = 3;
 
@@ -67,7 +67,7 @@ public class ServerConfig {
             return this;
         }
 
-        public ServerConfig build() {
+        public IRCServerConfig build() {
             if (host == null || host.trim().isEmpty()) {
                 throw new IllegalStateException("Host must be provided");
             }
@@ -87,7 +87,7 @@ public class ServerConfig {
                 throw new IllegalStateException("timeoutSeconds must be >0");
             }
 
-            return new ServerConfig(this);
+            return new IRCServerConfig(this);
         }
     }
 }

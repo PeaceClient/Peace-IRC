@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
+import com.peace.packets.c2s.DisconnectC2SPacket;
 import com.peace.packets.c2s.LoginC2SPacket;
 import com.peace.packets.s2c.*;
 
@@ -11,7 +12,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.*;
 
-public class ClientMain {
+public class IRCClientMain {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
@@ -27,15 +28,17 @@ public class ClientMain {
     private final int port;
     private final String username;
     private final String password;
-    private final ClientEventHandler eventHandler;
+    private final String server;
+    private final IRCClientEventHandler eventHandler;
 
     private boolean loggedIn;
 
-    public ClientMain(String addr, int port, String username, String password, ClientEventHandler eventHandler) {
+    public IRCClientMain(String addr, int port, String username, String password, String server, IRCClientEventHandler eventHandler) {
         this.addr = addr;
         this.port = port;
         this.username = username;
         this.password = password;
+        this.server = server;
         this.eventHandler = eventHandler;
 
         this.loggedIn = false;
@@ -70,6 +73,13 @@ public class ClientMain {
                     try {
                         JsonObject root = JsonParser.parseString(line).getAsJsonObject();
                         Packet packet = PacketFactory.createPacket(root);
+
+                        if (packet instanceof DisconnectS2CPacket disconnectS2CPacket) {
+                            eventHandler.onKick(this, disconnectS2CPacket.getReason());
+                            this.disconnect();
+                            return;
+                        }
+
                         incomingQueue.offer(packet);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -124,15 +134,10 @@ public class ClientMain {
     // TODO: err/info/warn debugs on event handler
     public void handlePacket(Packet packet) {
         if (!loggedIn) {
-            if (packet instanceof LoginS2CPacket loginS2CPacket) {
-                if (loginS2CPacket.wasSuccessful()) {
-                    System.out.println("Logged in!");
-                    loggedIn = true;
-                    eventHandler.postLogin(this);
-                } else {
-                    System.out.println("Server rejected login!");
-                    this.disconnect();
-                }
+            if (packet instanceof LoginSuccessS2CPacket loginSuccessS2CPacket) {
+                System.out.println("Logged in!");
+                loggedIn = true;
+                eventHandler.postLogin(this);
             }
             return;
         }
@@ -155,7 +160,7 @@ public class ClientMain {
     }
 
     public void doLogin() {
-        sendPacket(new LoginC2SPacket(this.username, this.password));
+        sendPacket(new LoginC2SPacket(this.username, this.password, this.server));
     }
 
     public void sendPacket(Packet packet) {
@@ -168,9 +173,15 @@ public class ClientMain {
     }
 
     public void disconnect() {
+        eventHandler.onDisconnect(this);
         running = false;
         tickExecutor.shutdownNow();
         System.out.println("Client disconnecting!");
+
+        if (socket != null && socket.isConnected() && out != null) {
+            out.println(PacketFactory.serializePacket(new DisconnectC2SPacket()));
+        }
+
         try { if (in != null) in.close(); } catch (IOException ignored) {}
         if (out != null) out.close();
         try { if (socket != null) socket.close(); } catch (IOException ignored) {}

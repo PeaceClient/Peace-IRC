@@ -23,4 +23,15 @@ public class BlockPos {
     public int getZ() {
         return z;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof BlockPos blockPos)) return false;
+        return getX() == blockPos.getX() && getY() == blockPos.getY() && getZ() == blockPos.getZ();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("{%d, %d, %d}", getX(), getY(), getZ());
+    }
 }

@@ -8,15 +8,18 @@ import com.peace.packets.PacketId;
 public class LoginC2SPacket implements Packet {
     String username;
     String password;
+    String server;
 
-    public LoginC2SPacket(String username, String password) {
+    public LoginC2SPacket(String username, String password, String server) {
         this.username = username;
         this.password = password;
+        this.server = server;
     }
 
     public LoginC2SPacket(JsonObject jsonObject) {
         this.username = jsonObject.get("username").getAsString();
         this.password = jsonObject.get("password").getAsString();
+        this.server = jsonObject.get("server").getAsString();
     }
 
     public String getUsername() {
@@ -27,11 +30,16 @@ public class LoginC2SPacket implements Packet {
         return this.password;
     }
 
+    public String getServer() {
+        return server;
+    }
+
     @Override
     public JsonObject toJson() {
         JsonObject object = new JsonObject();
         object.addProperty("username", this.username);
         object.addProperty("password", this.password);
+        object.addProperty("server", this.server);
         return object;
     }
 }

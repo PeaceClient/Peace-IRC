@@ -42,15 +42,16 @@ public class BreakingC2SPacket implements Packet {
     @Override
     public JsonObject toJson() {
         JsonObject object = new JsonObject();
-        if (position == null) {
-            object.addProperty("breaking", false);
-        } else {
-            object.addProperty("breaking", true);
-            object.addProperty("x", this.position.getX());
-            object.addProperty("y", this.position.getY());
-            object.addProperty("z", this.position.getZ());
-            object.addProperty("breakingProgress", this.breakingProgress);
-        }
+        boolean breaking = this.position != null;
+
+        object.addProperty("breaking", breaking);
+        if (!breaking) return object;
+
+        object.addProperty("x", this.position.getX());
+        object.addProperty("y", this.position.getY());
+        object.addProperty("z", this.position.getZ());
+        object.addProperty("breakingProgress", this.breakingProgress);
+
 
         return object;
     }

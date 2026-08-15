@@ -6,10 +6,7 @@ import com.google.gson.JsonParser;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
-import com.peace.packets.s2c.ChatS2CPacket;
-import com.peace.packets.s2c.LoginS2CPacket;
-import com.peace.packets.s2c.PlayerPositionS2CPacket;
-import com.peace.packets.s2c.ServerMessageS2CPacket;
+import com.peace.packets.s2c.*;
 import com.peace.util.BlockPos;
 import com.peace.util.Vec2i;
 import org.jspecify.annotations.Nullable;
@@ -23,9 +20,9 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ServerThread implements Runnable {
+public class IRCServerThread implements Runnable {
     private Socket clientSocket;
-    private final ServerMain serverMain;
+    private final IRCServerMain serverMain;
     private PrintWriter out;
     private BufferedReader in;
 
@@ -33,10 +30,10 @@ public class ServerThread implements Runnable {
     private volatile boolean running;
 
     private boolean loggedIn;
-    // TODO: timeout after 10sec if !loggedIn
-    private long connectMillis;
+    private final long connectMillis;
 
     private String username;
+    private String server;
 
     private volatile boolean positionChanged;
     private volatile @Nullable Vec2i position;
@@ -48,12 +45,12 @@ public class ServerThread implements Runnable {
     // 1 second cooldown
     private volatile long lastChatMessage;
 
-    public ServerThread(Socket clientSocket, ServerMain serverMain) {
+    public IRCServerThread(Socket clientSocket, IRCServerMain serverMain) {
         this.clientSocket = clientSocket;
         this.serverMain = serverMain;
 
         this.loggedIn = false;
-        this.connectMillis = System.currentTimeMillis();
+        this.connectMillis = System.currentTimeMillis(); // technically wrong but after init .run() gets called anyways
     }
 
     /**
@@ -62,6 +59,7 @@ public class ServerThread implements Runnable {
      */
     @Override
     public void run() {
+        this.serverMain.notLoggedInSet.add(this);
         this.running = true;
 
         try {
@@ -71,14 +69,18 @@ public class ServerThread implements Runnable {
             startWriterThread();
 
             String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                System.out.println("Recieved: " + inputLine);
-
+            while (in != null && (inputLine = in.readLine()) != null) {
                 JsonElement element = JsonParser.parseString(inputLine);
 
                 JsonObject root = element.getAsJsonObject();
 
                 Packet packet = PacketFactory.createPacket(root);
+
+                if (packet instanceof DisconnectC2SPacket) {
+                    this.disconnect("User disconnect");
+                    return;
+                }
+
                 if (loggedIn) handlePacket(packet);
                 else handlePacketNotLoggedIn(packet);
             }
@@ -86,7 +88,7 @@ public class ServerThread implements Runnable {
             System.out.println("Failure in handling packets");
             e.printStackTrace();
         } finally {
-            disconnect();
+            disconnect("User disconnect");
         }
     }
 
@@ -113,24 +115,27 @@ public class ServerThread implements Runnable {
         if (!(packet instanceof LoginC2SPacket loginC2SPacket)) return;
         if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.getConfig().getPassword())) return;
 
-        if (serverMain.nameMap.containsKey(this.username)) {
+        if (serverMain.getUsers(loginC2SPacket.getServer()).containsKey(loginC2SPacket.getUsername())) {
             System.out.println("Player trying to connect with existing username!");
-            sendPacket(new LoginS2CPacket(false));
-            this.disconnect();
+            this.disconnect("Username already logged on!");
         } else {
-            System.out.println("Player " + loginC2SPacket.getUsername() + " logged in!");
             this.loggedIn = true;
             this.username = loginC2SPacket.getUsername();
-            serverMain.nameMap.put(this.username, this);
+            this.server = loginC2SPacket.getServer();
 
-            sendPacket(new LoginS2CPacket(true));
+            System.out.println("Player " + username + " logged in server " + server);
+
+            this.serverMain.notLoggedInSet.remove(this);
+            serverMain.add(this);
+
+            sendPacket(new LoginSuccessS2CPacket());
         }
     }
 
     public void handlePacket(Packet packet) {
-        if (packet instanceof RequestPlayerPositionC2SPacket requestPlayerPositionC2SPacket) {
+       /* if (packet instanceof RequestPlayerPositionC2SPacket requestPlayerPositionC2SPacket) {
             String requestedUser = requestPlayerPositionC2SPacket.getUsername();
-            ServerThread otherThread = serverMain.nameMap.get(requestedUser);
+            IRCServerThread otherThread = serverMain.nameMap.get(requestedUser);
             if (otherThread == null) {
                 sendChatMessage("No player with name found!");
                 return;
@@ -144,6 +149,8 @@ public class ServerThread implements Runnable {
             sendPacket(new PlayerPositionS2CPacket(otherThread.position, requestedUser));
             return;
         }
+
+        */
         if (packet instanceof PlayerPositionC2SPacket updatePositionC2SPacket) {
             Vec2i ownPosition = this.position;
             if (updatePositionC2SPacket.getPosition() == null) return;
@@ -157,9 +164,14 @@ public class ServerThread implements Runnable {
             return;
         }
         if (packet instanceof BreakingC2SPacket breakingC2SPacket) {
+            if (Objects.equals(this.breakingPos, breakingC2SPacket.getPosition())) {
+                // equal progress and pos
+                if (this.breakingProgress == breakingC2SPacket.getBreakingProgress()) return;
+            }
+
             this.breakingPos = breakingC2SPacket.getPosition();
             this.breakingProgress = breakingC2SPacket.getBreakingProgress();
-            System.out.println("Refreshed breaking pos!");
+            this.breakingChanged = true;
             return;
         }
         if (packet instanceof ChatC2SPacket chatC2SPacket) {
@@ -170,14 +182,14 @@ public class ServerThread implements Runnable {
                 sendPacket(new ServerMessageS2CPacket(String.format("You are on cooldown for %.1f seconds!", (double)(msLeft) / 1000)));
             } else {
                 lastChatMessage = now;
-                for (ServerThread player : serverMain.nameMap.values()) {
+                for (IRCServerThread player : serverMain.getUsers(this.server).values()) {
                     player.sendPacket(new ChatS2CPacket(this.username, chatC2SPacket.getMessage()));
                 }
             }
         }
     }
 
-    public void sendChatMessage(String text) {
+    public void sendServerMessage(String text) {
         sendPacket(new ServerMessageS2CPacket(text));
     }
 
@@ -215,16 +227,32 @@ public class ServerThread implements Runnable {
         return this.username;
     }
 
+    public String getServer() {
+        return this.server;
+    }
+
+    public long getConnectMillis() {
+        return this.connectMillis;
+    }
 
     public void disconnect() {
+        disconnect("unspecified");
+    }
+
+    public void disconnect(String reason) {
+        if (!this.running) return;
         this.running = false;
+        if (clientSocket != null && !clientSocket.isClosed() && out != null) {
+            out.println(PacketFactory.serializePacket(new DisconnectS2CPacket(reason)));
+        }
         try {
-            serverMain.nameMap.remove(this.username);
+            this.serverMain.notLoggedInSet.remove(this);
+            if (this.server != null && this.username != null) serverMain.getUsers(this.server).remove(this.username);
             if (in != null) in.close();
             if (out != null) out.close();
+            if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close();
             in = null;
             out = null;
-            if (!clientSocket.isClosed()) clientSocket.close();
             clientSocket = null;
             System.out.println("Closed connection for player: " + (username == null ? "None" : username));
         } catch (IOException ignored) {

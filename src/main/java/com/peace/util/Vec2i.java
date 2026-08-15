@@ -19,7 +19,9 @@ public class Vec2i {
     }
 
     public double squaredDistanceTo(Vec2i pos) {
-        return (pos.getX()*pos.getX() - this.getX()*this.getX()) + (pos.getZ()*pos.getZ() - this.getZ()*this.getZ());
+        double x = this.getX() - pos.getX();
+        double z = this.getZ() - pos.getZ();
+        return x*x + z*z;
     }
 
     @Override

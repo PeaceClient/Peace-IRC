@@ -1,8 +1,8 @@
 package com.peace;
 
-import com.peace.client.ClientMain;
-import com.peace.server.ServerConfig;
-import com.peace.server.ServerMain;
+import com.peace.client.IRCClientMain;
+import com.peace.server.IRCServerConfig;
+import com.peace.server.IRCServerMain;
 
 import java.io.IOException;
 
@@ -10,24 +10,32 @@ import java.io.IOException;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
-        ServerConfig config = new ServerConfig.Builder()
+        IRCServerConfig config = new IRCServerConfig.Builder()
                 .host("localhost")
                 .port(8080)
                 .password("TestPassword")
                 .build();
+
+        IRCServerMain serverMain = new IRCServerMain(config);
+
         Thread serverMainThread = new Thread(() -> {
             try {
-                new ServerMain(config);
+                serverMain.run();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
         serverMainThread.start();
 
-        ClientMain clientMain1 = new ClientMain("localhost", 8080, "Player1", "TestPassword", new DebugEventHandler());
+        IRCClientMain clientMain1 = new IRCClientMain("localhost", 8080, "Player1", "TestPassword", "crystalpvp.cc", new DebugEventHandler());
         clientMain1.start();
 
-        ClientMain clientMain2 = new ClientMain("localhost", 8080, "Player2", "TestPassword", new DebugEventHandler());
-        clientMain2.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            serverMain.shutdown();
+            try {
+                serverMainThread.join();
+            } catch (InterruptedException ignored) {
+            }
+        }));
     }
 }
