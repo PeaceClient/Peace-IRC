@@ -7,7 +7,7 @@ public class IRCServerConfig {
 
     private final float timeoutSeconds;
     private final long chatCooldownMillis;
-    private final double positionUpdateDistance;
+    private final long entityDespawnMillis;
 
     private IRCServerConfig(Builder builder) {
         this.host = builder.host;
@@ -15,7 +15,7 @@ public class IRCServerConfig {
         this.password = builder.password;
         this.timeoutSeconds = builder.timeoutSeconds;
         this.chatCooldownMillis = builder.chatCooldownMillis;
-        this.positionUpdateDistance = builder.positionUpdateDistance;
+        this.entityDespawnMillis = builder.entityDespawnMillis;
     }
 
     public String getHost() { return host; }
@@ -23,7 +23,10 @@ public class IRCServerConfig {
     public String getPassword() { return password; }
     public float getTimeoutSeconds() { return timeoutSeconds; }
     public long getChatCooldownMillis() { return chatCooldownMillis; }
-    public double getPositionUpdateDistance() { return positionUpdateDistance; }
+
+    public long getEntityDespawnMillis() {
+        return entityDespawnMillis;
+    }
 
     public static class Builder {
         private String host;
@@ -32,7 +35,7 @@ public class IRCServerConfig {
 
         private float timeoutSeconds = 5f;
         private long chatCooldownMillis = 500;
-        private double positionUpdateDistance = 3;
+        private long entityDespawnMillis = 5000;
 
         public Builder() {
         }
@@ -62,8 +65,8 @@ public class IRCServerConfig {
             return this;
         }
 
-        public Builder positionUpdateDistance(double positionUpdateDistance) {
-            this.positionUpdateDistance = positionUpdateDistance;
+        public Builder entityDespawnMillis(long entityDespawnMillis) {
+            this.entityDespawnMillis = entityDespawnMillis;
             return this;
         }
 
@@ -83,8 +86,8 @@ public class IRCServerConfig {
             if (chatCooldownMillis <= 0) {
                 throw new IllegalStateException("chatCooldownMillis must be >0");
             }
-            if (positionUpdateDistance <= 0) {
-                throw new IllegalStateException("timeoutSeconds must be >0");
+            if (entityDespawnMillis <= 0) {
+                throw new IllegalStateException("entityDespawnMillis must be >0");
             }
 
             return new IRCServerConfig(this);

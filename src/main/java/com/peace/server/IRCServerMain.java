@@ -4,21 +4,20 @@ import com.peace.packets.Packet;
 import com.peace.packets.s2c.BreakingS2CPacket;
 import com.peace.packets.s2c.PlayerPositionS2CPacket;
 import com.peace.util.BlockPos;
-import com.peace.util.Vec2i;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class IRCServerMain {
-    public final Map<String, Map<String, IRCServerThread>> serverNameMap = new HashMap<>();
+    public final Map<String, Map<String, IRCServerThread>> serverNameMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Map<String, EntityState>> entityStates = new ConcurrentHashMap<>();
+
     public final Set<IRCServerThread> notLoggedInSet = new HashSet<>();
 
     private final IRCServerConfig config;
@@ -58,30 +57,43 @@ public class IRCServerMain {
             }
         }
 
-        for (Map<String, IRCServerThread> server : serverNameMap.values()) {
-            for (IRCServerThread player : server.values()) {
-                if (player.shouldUpdatePositionAndReset()) {
-                    Vec2i pos = player.getPosition();
-                    String username = player.getUsername();
+        List<PlayerPositionS2CPacket> playerPositions = new ArrayList<>();
 
-                    Packet positionPacket = new PlayerPositionS2CPacket(pos, username);
-                    for (IRCServerThread target : server.values()) {
-                        if (target != player) {
-                            target.sendPacket(positionPacket);
-                        }
-                    }
+        for (Map.Entry<String, Map<String, IRCServerThread>> server : serverNameMap.entrySet()) {
+            playerPositions.clear();
+
+            Map<String, EntityState> entityStateMap = getEntityStates(server.getKey());
+            Iterator<Map.Entry<String, EntityState>> iterator = entityStateMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, EntityState> entry = iterator.next();
+                // timeout for entity lastSeen
+                if (now - entry.getValue().millis() > config.getEntityDespawnMillis()) {
+                    iterator.remove();
+                    // pass null to force removal on clients
+                    playerPositions.add(new PlayerPositionS2CPacket(entry.getKey(), null));
+                } else {
+                    // assume truth and send
+                    playerPositions.add(new PlayerPositionS2CPacket(entry.getKey(), entry.getValue().pos()));
                 }
+            }
 
+            for (IRCServerThread player : server.getValue().values()) {
                 if (player.shouldUpdateBreakingAndReset()) {
                     BlockPos breakPos = player.getBreakingPosition();
                     float progress = player.getBreakingProgress();
 
                     Packet breakPacket = new BreakingS2CPacket(breakPos, progress, player.getUsername());
-                    for (IRCServerThread target : server.values()) {
+                    for (IRCServerThread target : server.getValue().values()) {
                         if (target != player) {
                             target.sendPacket(breakPacket);
                         }
                     }
+                }
+
+                // TODO: batching for playerpositions!
+                for (PlayerPositionS2CPacket packet : playerPositions) {
+                    if (packet.getUsername().equals(player.getUsername())) continue;
+                    player.sendPacket(packet);
                 }
             }
         }
@@ -103,6 +115,18 @@ public class IRCServerMain {
         getUsers(serverThread.getServer()).put(serverThread.getUsername(), serverThread);
     }
 
+    public Map<String, EntityState> getEntityStates(String server) {
+        return entityStates.computeIfAbsent(server, (string) -> new HashMap<>());
+    }
+
+    public EntityState getEntityState(String server, String username) {
+        return getEntityStates(server).get(username);
+    }
+
+    public void report(String server, String username, BlockPos pos, long now) {
+        getEntityStates(server).put(username, new EntityState(pos, now));
+    }
+
     public IRCServerConfig getConfig() {
         return this.config;
     }
@@ -115,5 +139,8 @@ public class IRCServerMain {
                 player.disconnect("Shutting down");
             }
         }
+    }
+
+    public record EntityState(BlockPos pos, long millis) {
     }
 }

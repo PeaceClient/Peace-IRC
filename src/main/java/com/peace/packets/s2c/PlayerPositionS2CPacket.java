@@ -3,28 +3,35 @@ package com.peace.packets.s2c;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
-import com.peace.util.Vec2i;
+import com.peace.util.BlockPos;
+import org.jspecify.annotations.Nullable;
 
 @PacketId(0x05)
 public class PlayerPositionS2CPacket implements Packet {
-    Vec2i position;
     String username;
+    // nullable means BlockPos isn't in render distance (removal when caching)
+    @Nullable BlockPos position;
 
-    public PlayerPositionS2CPacket(Vec2i position, String username) {
-        this.position = position;
+    public PlayerPositionS2CPacket(String username, @Nullable BlockPos position) {
         this.username = username;
+        this.position = position;
     }
 
     public PlayerPositionS2CPacket(JsonObject jsonObject) {
-        int x = jsonObject.get("x").getAsInt();
-        int z = jsonObject.get("z").getAsInt();
-        String username = jsonObject.get("username").getAsString();
-        this.position = new Vec2i(x, z);
-        this.username = username;
+        this.username = jsonObject.get("username").getAsString();
+        boolean visible = jsonObject.get("visible").getAsBoolean();
+        if (!visible) {
+            this.position = null;
+        } else {
+            int x = jsonObject.get("x").getAsInt();
+            int y = jsonObject.get("y").getAsInt();
+            int z = jsonObject.get("z").getAsInt();
+            this.position = new BlockPos(x, y, z);
+        }
     }
 
-    public Vec2i getPosition() {
-        return this.position;
+    public @Nullable BlockPos getPosition() {
+        return position;
     }
 
     public String getUsername() {
@@ -34,9 +41,16 @@ public class PlayerPositionS2CPacket implements Packet {
     @Override
     public JsonObject toJson() {
         JsonObject object = new JsonObject();
-        object.addProperty("x", this.position.getX());
-        object.addProperty("z", this.position.getZ());
         object.addProperty("username", this.username);
+
+        boolean visible = position != null;
+        object.addProperty("visible", visible);
+
+        if (!visible) return object;
+
+        object.addProperty("x", this.position.getX());
+        object.addProperty("y", this.position.getY());
+        object.addProperty("z", this.position.getZ());
         return object;
     }
 }

@@ -1,6 +1,5 @@
 package com.peace;
 
-import com.peace.client.IRCClientMain;
 import com.peace.server.IRCServerConfig;
 import com.peace.server.IRCServerMain;
 
@@ -26,9 +25,6 @@ public class Main {
             }
         });
         serverMainThread.start();
-
-        IRCClientMain clientMain1 = new IRCClientMain("localhost", 8080, "Player1", "TestPassword", "crystalpvp.cc", new DebugEventHandler());
-        clientMain1.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             serverMain.shutdown();

@@ -8,7 +8,10 @@ import com.peace.packets.c2s.DisconnectC2SPacket;
 import com.peace.packets.c2s.LoginC2SPacket;
 import com.peace.packets.s2c.*;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.*;
 
@@ -134,7 +137,7 @@ public class IRCClientMain {
     // TODO: err/info/warn debugs on event handler
     public void handlePacket(Packet packet) {
         if (!loggedIn) {
-            if (packet instanceof LoginSuccessS2CPacket loginSuccessS2CPacket) {
+            if (packet instanceof LoginSuccessS2CPacket) {
                 System.out.println("Logged in!");
                 loggedIn = true;
                 eventHandler.postLogin(this);

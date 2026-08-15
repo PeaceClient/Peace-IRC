@@ -2,7 +2,6 @@ package com.peace.client;
 
 import com.peace.packets.Packet;
 import com.peace.util.BlockPos;
-import com.peace.util.Vec2i;
 import org.jspecify.annotations.Nullable;
 
 // TODO: move ClientMain into the constructor of ClientEventHandler?
@@ -17,6 +16,10 @@ public interface IRCClientEventHandler {
     default void onProgressUpdate(IRCClientMain main, String username, @Nullable BlockPos pos, float breakingProgress) {}
     void onServerMessage(IRCClientMain main, String message); // handle announces etc
     void onIrcChat(IRCClientMain main, String sender, String message); // irc chat
-    default void onPositionReceive(IRCClientMain main, String username, Vec2i position) {}
-    void tick(IRCClientMain main);
+
+    default void onPositionReceive(IRCClientMain main, String username, BlockPos position) {
+    }
+
+    default void tick(IRCClientMain main) {
+    }
 }

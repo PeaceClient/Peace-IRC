@@ -24,6 +24,12 @@ public class BlockPos {
         return z;
     }
 
+    public double horizontalSquaredDistanceTo(BlockPos pos) {
+        double x = this.getX() - pos.getX();
+        double z = this.getZ() - pos.getZ();
+        return x * x + z * z;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof BlockPos blockPos)) return false;

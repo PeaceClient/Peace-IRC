@@ -6,9 +6,11 @@ import com.google.gson.JsonParser;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
-import com.peace.packets.s2c.*;
+import com.peace.packets.s2c.ChatS2CPacket;
+import com.peace.packets.s2c.DisconnectS2CPacket;
+import com.peace.packets.s2c.LoginSuccessS2CPacket;
+import com.peace.packets.s2c.ServerMessageS2CPacket;
 import com.peace.util.BlockPos;
-import com.peace.util.Vec2i;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -16,8 +18,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class IRCServerThread implements Runnable {
@@ -35,8 +39,9 @@ public class IRCServerThread implements Runnable {
     private String username;
     private String server;
 
-    private volatile boolean positionChanged;
-    private volatile @Nullable Vec2i position;
+    private final Map<String, BlockPos> cachedBlockPositions = new ConcurrentHashMap<>();
+    private volatile boolean positionsChanged;
+
     // Null when not breaking!
     private volatile boolean breakingChanged;
     private volatile @Nullable BlockPos breakingPos;
@@ -151,16 +156,14 @@ public class IRCServerThread implements Runnable {
         }
 
         */
-        if (packet instanceof PlayerPositionC2SPacket updatePositionC2SPacket) {
-            Vec2i ownPosition = this.position;
+        if (packet instanceof SeenEntityC2SPacket updatePositionC2SPacket) {
             if (updatePositionC2SPacket.getPosition() == null) return;
-
-            // less than N blocks, prevents spam
-            double d = serverMain.getConfig().getPositionUpdateDistance();
-            if (ownPosition != null && ownPosition.squaredDistanceTo(updatePositionC2SPacket.getPosition()) < d*d) return;
-
-            this.position = updatePositionC2SPacket.getPosition();
-            this.positionChanged = true;
+            if (Math.abs(System.currentTimeMillis() - updatePositionC2SPacket.getSeen()) > 1000)
+                return; // 1 sec difference, fake timing
+            IRCServerMain.EntityState serverPosition = serverMain.getEntityState(server, updatePositionC2SPacket.getUsername());
+            if (serverPosition == null || serverPosition.millis() < updatePositionC2SPacket.getSeen()) {
+                this.serverMain.report(this.server, updatePositionC2SPacket.getUsername(), updatePositionC2SPacket.getPosition(), updatePositionC2SPacket.getSeen());
+            }
             return;
         }
         if (packet instanceof BreakingC2SPacket breakingC2SPacket) {
@@ -200,13 +203,13 @@ public class IRCServerThread implements Runnable {
     }
 
     public boolean shouldUpdatePositionAndReset() {
-        boolean shouldUpdate = this.positionChanged;
-        this.positionChanged = false;
+        boolean shouldUpdate = this.positionsChanged;
+        this.positionsChanged = false;
         return shouldUpdate;
     }
 
-    public @Nullable Vec2i getPosition() {
-        return this.position;
+    public Map<String, BlockPos> getCachedBlockPositions() {
+        return cachedBlockPositions;
     }
 
     public boolean shouldUpdateBreakingAndReset() {
