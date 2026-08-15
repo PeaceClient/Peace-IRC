@@ -176,6 +176,7 @@ public class IRCClientMain {
     }
 
     public void disconnect() {
+        if (!this.running) return; // already disconnected
         eventHandler.onDisconnect(this);
         running = false;
         tickExecutor.shutdownNow();

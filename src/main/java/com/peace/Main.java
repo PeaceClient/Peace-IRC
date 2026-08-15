@@ -2,20 +2,29 @@ package com.peace;
 
 import com.peace.server.IRCServerConfig;
 import com.peace.server.IRCServerMain;
+import org.apache.logging.log4j.core.tools.picocli.CommandLine;
 
 import java.io.IOException;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        IRCServerConfig config = new IRCServerConfig.Builder()
-                .host("localhost")
-                .port(8080)
-                .password("TestPassword")
-                .build();
+public class Main implements Runnable {
+    @CommandLine.Option(names = {"--host", "-h"}, description = "Server hostname")
+    private String host = "localhost";
 
-        IRCServerMain serverMain = new IRCServerMain(config);
+    @CommandLine.Option(names = {"--port", "-p"}, description = "Server port")
+    private int port = 8080;
+
+    @CommandLine.Option(names = {"--password"}, required = true, description = "Server password")
+    private String password;
+
+    @Override
+    public void run() {
+        // TODO: implement rest of the builder settings!
+        IRCServerConfig.Builder builder = new IRCServerConfig.Builder()
+                .host(host)
+                .port(port)
+                .password(password);
+
+        IRCServerMain serverMain = new IRCServerMain(builder.build());
 
         Thread serverMainThread = new Thread(() -> {
             try {
@@ -33,5 +42,9 @@ public class Main {
             } catch (InterruptedException ignored) {
             }
         }));
+    }
+
+    public static void main(String[] args) {
+        CommandLine.run(new Main(), System.out, args);
     }
 }
