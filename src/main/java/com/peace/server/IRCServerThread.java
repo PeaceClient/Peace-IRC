@@ -18,10 +18,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class IRCServerThread implements Runnable {
@@ -39,8 +37,6 @@ public class IRCServerThread implements Runnable {
     private String username;
     private String server;
 
-    private final Map<String, BlockPos> cachedBlockPositions = new ConcurrentHashMap<>();
-    private volatile boolean positionsChanged;
 
     // Null when not breaking!
     private volatile boolean breakingChanged;
@@ -118,7 +114,11 @@ public class IRCServerThread implements Runnable {
 
     private void handlePacketNotLoggedIn(Packet packet) {
         if (!(packet instanceof LoginC2SPacket loginC2SPacket)) return;
-        if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.getConfig().getPassword())) return;
+        if (!Objects.equals(loginC2SPacket.getPassword(), serverMain.getConfig().getPassword())) {
+            System.out.println("Player typed in invalid password with user: " + loginC2SPacket.getUsername());
+            this.disconnect("Wrong password!");
+            return;
+        }
 
         if (serverMain.getUsers(loginC2SPacket.getServer()).containsKey(loginC2SPacket.getUsername())) {
             System.out.println("Player trying to connect with existing username!");
@@ -138,31 +138,11 @@ public class IRCServerThread implements Runnable {
     }
 
     public void handlePacket(Packet packet) {
-       /* if (packet instanceof RequestPlayerPositionC2SPacket requestPlayerPositionC2SPacket) {
-            String requestedUser = requestPlayerPositionC2SPacket.getUsername();
-            IRCServerThread otherThread = serverMain.nameMap.get(requestedUser);
-            if (otherThread == null) {
-                sendChatMessage("No player with name found!");
-                return;
-            }
-
-            if (otherThread.position == null) {
-                sendChatMessage("No position received from other player!");
-                return;
-            }
-
-            sendPacket(new PlayerPositionS2CPacket(otherThread.position, requestedUser));
-            return;
-        }
-
-        */
+        long now = System.currentTimeMillis();
         if (packet instanceof SeenEntityC2SPacket updatePositionC2SPacket) {
-            if (updatePositionC2SPacket.getPosition() == null) return;
-            if (Math.abs(System.currentTimeMillis() - updatePositionC2SPacket.getSeen()) > 1000)
-                return; // 1 sec difference, fake timing
             IRCServerMain.EntityState serverPosition = serverMain.getEntityState(server, updatePositionC2SPacket.getUsername());
-            if (serverPosition == null || serverPosition.millis() < updatePositionC2SPacket.getSeen()) {
-                this.serverMain.report(this.server, updatePositionC2SPacket.getUsername(), updatePositionC2SPacket.getPosition(), updatePositionC2SPacket.getSeen());
+            if (serverPosition == null || serverPosition.millis() < now) {
+                this.serverMain.report(this.server, updatePositionC2SPacket.getUsername(), updatePositionC2SPacket.getPosition(), now);
             }
             return;
         }
@@ -178,7 +158,6 @@ public class IRCServerThread implements Runnable {
             return;
         }
         if (packet instanceof ChatC2SPacket chatC2SPacket) {
-            long now = System.currentTimeMillis();
             long cooldown = serverMain.getConfig().getChatCooldownMillis();
             if (now - lastChatMessage < cooldown) {
                 long msLeft = cooldown - (now-lastChatMessage);
@@ -200,16 +179,6 @@ public class IRCServerThread implements Runnable {
         if (running && !outgoingQueue.offer(packet)) {
             System.out.println("Issue with sending packet!");
         }
-    }
-
-    public boolean shouldUpdatePositionAndReset() {
-        boolean shouldUpdate = this.positionsChanged;
-        this.positionsChanged = false;
-        return shouldUpdate;
-    }
-
-    public Map<String, BlockPos> getCachedBlockPositions() {
-        return cachedBlockPositions;
     }
 
     public boolean shouldUpdateBreakingAndReset() {
@@ -249,8 +218,7 @@ public class IRCServerThread implements Runnable {
             out.println(PacketFactory.serializePacket(new DisconnectS2CPacket(reason)));
         }
         try {
-            this.serverMain.notLoggedInSet.remove(this);
-            if (this.server != null && this.username != null) serverMain.getUsers(this.server).remove(this.username);
+            this.serverMain.remove(this);
             if (in != null) in.close();
             if (out != null) out.close();
             if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close();

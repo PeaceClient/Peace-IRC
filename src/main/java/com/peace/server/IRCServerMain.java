@@ -115,6 +115,16 @@ public class IRCServerMain {
         getUsers(serverThread.getServer()).put(serverThread.getUsername(), serverThread);
     }
 
+    public void remove(IRCServerThread serverThread) {
+        String server = serverThread.getServer();
+        String username = serverThread.getUsername();
+        this.notLoggedInSet.remove(serverThread);
+        if (server != null && username != null) {
+            this.getUsers(server).remove(username);
+            if (this.getUsers(server).isEmpty()) this.serverNameMap.remove(server); // remove server from nesting
+        }
+    }
+
     public Map<String, EntityState> getEntityStates(String server) {
         return entityStates.computeIfAbsent(server, (string) -> new HashMap<>());
     }
