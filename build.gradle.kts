@@ -1,9 +1,10 @@
 plugins {
     id("java")
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 group = "com.peace"
-version = "1.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -23,6 +24,12 @@ dependencies {
     implementation("com.google.code.gson:gson:2.14.0")
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.apache.logging.log4j:log4j-core:2.25.4")
+}
+
+tasks.jar {
+    manifest {
+        attributes("Main-Class" to "com.peace.Main")
+    }
 }
 
 tasks.test {

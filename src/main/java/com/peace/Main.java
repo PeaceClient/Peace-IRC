@@ -36,11 +36,9 @@ public class Main implements Runnable {
         serverMainThread.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down!");
             serverMain.shutdown();
-            try {
-                serverMainThread.join();
-            } catch (InterruptedException ignored) {
-            }
+            serverMainThread.interrupt();
         }));
     }
 
