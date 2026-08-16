@@ -3,13 +3,11 @@ package com.peace.server;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.peace.VersionFeatures;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
-import com.peace.packets.s2c.ChatS2CPacket;
-import com.peace.packets.s2c.DisconnectS2CPacket;
-import com.peace.packets.s2c.LoginSuccessS2CPacket;
-import com.peace.packets.s2c.ServerMessageS2CPacket;
+import com.peace.packets.s2c.*;
 import com.peace.util.BlockPos;
 import org.jspecify.annotations.Nullable;
 
@@ -33,6 +31,8 @@ public class IRCServerThread implements Runnable {
 
     private boolean loggedIn;
     private final long connectMillis;
+
+    private int protocolVersion;
 
     private String username;
     private String server;
@@ -127,13 +127,23 @@ public class IRCServerThread implements Runnable {
             this.loggedIn = true;
             this.username = loginC2SPacket.getUsername();
             this.server = loginC2SPacket.getServer();
-
+            this.protocolVersion = loginC2SPacket.getProtocolVersion();
             System.out.println("Player " + username + " logged in server " + server);
 
             this.serverMain.notLoggedInSet.remove(this);
-            serverMain.add(this);
 
             sendPacket(new LoginSuccessS2CPacket());
+
+            // sends all users to the current player
+            serverMain.broadcastAllIRCUsers(this);
+            // send self to all & self
+            serverMain.add(this);
+
+            if (this.protocolVersion > serverMain.protocolVersion) {
+                sendPacket(new ServerMessageS2CPacket(String.format("Server running on version %d while client is ahead at version %d!", serverMain.protocolVersion, this.protocolVersion)));
+            } else if (this.protocolVersion < serverMain.protocolVersion){
+                sendPacket(new ServerMessageS2CPacket(String.format("Server running on version %d while client is behind at version %d!", serverMain.protocolVersion, this.protocolVersion)));
+            }
         }
     }
 
@@ -167,6 +177,27 @@ public class IRCServerThread implements Runnable {
                 for (IRCServerThread player : serverMain.getUsers(this.server).values()) {
                     player.sendPacket(new ChatS2CPacket(this.username, chatC2SPacket.getMessage()));
                 }
+            }
+        }
+        if (packet instanceof PrivateMessageC2SPacket privateMessageC2SPacket) {
+            long cooldown = serverMain.getConfig().getChatCooldownMillis();
+            if (now - lastChatMessage < cooldown) {
+                long msLeft = cooldown - (now-lastChatMessage);
+                sendPacket(new ServerMessageS2CPacket(String.format("You are on cooldown for %.1f seconds!", (double)(msLeft) / 1000)));
+            } else {
+                lastChatMessage = now;
+
+                IRCServerThread target = serverMain.getUsers(this.server).get(privateMessageC2SPacket.getTarget());
+                if (target == null) {
+                    sendPacket(new ServerMessageS2CPacket(String.format("%s is not online!", privateMessageC2SPacket.getTarget())));
+                    return;
+                }
+                if (!target.hasFeature(VersionFeatures.PRIVATE_MESSAGES)) {
+                    sendPacket(new ServerMessageS2CPacket(String.format("%s's client doesn't support private messages!", privateMessageC2SPacket.getTarget())));
+                    return;
+                }
+                target.sendPacket(new PrivateMessageS2CPacket(this.getUsername(), privateMessageC2SPacket.getMessage(), false));
+                this.sendPacket(new PrivateMessageS2CPacket(target.getUsername(), privateMessageC2SPacket.getMessage(), true));
             }
         }
     }
@@ -205,6 +236,14 @@ public class IRCServerThread implements Runnable {
 
     public long getConnectMillis() {
         return this.connectMillis;
+    }
+
+    public int getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public boolean hasFeature(int feature) {
+        return feature <= getProtocolVersion();
     }
 
     public void disconnect() {

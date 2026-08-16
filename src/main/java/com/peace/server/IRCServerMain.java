@@ -1,7 +1,10 @@
 package com.peace.server;
 
+import com.peace.VersionFeatures;
 import com.peace.packets.Packet;
+import com.peace.packets.PacketFactory;
 import com.peace.packets.s2c.BreakingS2CPacket;
+import com.peace.packets.s2c.IRCUsersS2CPacket;
 import com.peace.packets.s2c.PlayerPositionS2CPacket;
 import com.peace.util.BlockPos;
 
@@ -15,6 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class IRCServerMain {
+    public final int protocolVersion;
     public final Map<String, Map<String, IRCServerThread>> serverNameMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<String, EntityState>> entityStates = new ConcurrentHashMap<>();
 
@@ -27,6 +31,11 @@ public class IRCServerMain {
     private volatile boolean running;
 
     public IRCServerMain(IRCServerConfig config) {
+        this(config, PacketFactory.PROTOCOL_VERSION); // static constant
+    }
+
+    public IRCServerMain(IRCServerConfig config, int protocolVersion) {
+        this.protocolVersion = protocolVersion;
         this.config = config;
         running = false;
     }
@@ -113,6 +122,7 @@ public class IRCServerMain {
 
     public void add(IRCServerThread serverThread) {
         getUsers(serverThread.getServer()).put(serverThread.getUsername(), serverThread);
+        this.broadcastIRCUser(serverThread.getUsername(), serverThread.getServer(), IRCUsersS2CPacket.Action.Add);
     }
 
     public void remove(IRCServerThread serverThread) {
@@ -122,6 +132,24 @@ public class IRCServerMain {
         if (server != null && username != null) {
             this.getUsers(server).remove(username);
             if (this.getUsers(server).isEmpty()) this.serverNameMap.remove(server); // remove server from nesting
+        }
+
+        this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
+    }
+
+    private void broadcastIRCUser(String username, String server, IRCUsersS2CPacket.Action action) {
+        for (IRCServerThread player : getUsers(server).values()) {
+            if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
+                player.sendPacket(new IRCUsersS2CPacket(List.of(username), action, true));
+            }
+        }
+    }
+
+    public void broadcastAllIRCUsers(IRCServerThread player) {
+        if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
+            List<String> playersOnServer = List.copyOf(getUsers(player.getServer()).keySet());
+            // don't announce, these are not new players!
+            player.sendPacket(new IRCUsersS2CPacket(playersOnServer, IRCUsersS2CPacket.Action.Add, false));
         }
     }
 

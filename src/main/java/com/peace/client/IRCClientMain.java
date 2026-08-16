@@ -157,10 +157,18 @@ public class IRCClientMain {
         if (packet instanceof ChatS2CPacket chatS2CPacket) {
             eventHandler.onIrcChat(this, chatS2CPacket.getUsername(), chatS2CPacket.getMessage());
         }
+
+        if (packet instanceof IRCUsersS2CPacket ircUsersS2CPacket) {
+            eventHandler.onIRCUserUpdate(this, ircUsersS2CPacket.getUsernames(), ircUsersS2CPacket.getAction(), ircUsersS2CPacket.shouldAnnounce());
+        }
+
+        if (packet instanceof PrivateMessageS2CPacket privateMessageS2CPacket) {
+            eventHandler.onPrivateMessage(this, privateMessageS2CPacket.getSender(), privateMessageS2CPacket.getMessage(), privateMessageS2CPacket.isOwnMessage());
+        }
     }
 
     public void doLogin() {
-        sendPacket(new LoginC2SPacket(this.username, this.password, this.server));
+        sendPacket(new LoginC2SPacket(this.username, this.password, this.server, PacketFactory.PROTOCOL_VERSION));
     }
 
     public void sendPacket(Packet packet) {

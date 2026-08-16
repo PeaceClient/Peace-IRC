@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class PacketFactory {
+    public static final int PROTOCOL_VERSION = 1;
     private static final Map<Byte, Function<JsonObject, Packet>> REGISTRY = new HashMap<>();
 
     static {
@@ -17,14 +18,17 @@ public class PacketFactory {
         register(ChatC2SPacket.class);
         register(DisconnectC2SPacket.class);
         register(LoginC2SPacket.class);
+        register(PrivateMessageC2SPacket.class);
         register(RequestPlayerPositionC2SPacket.class);
         register(SeenEntityC2SPacket.class);
 
         register(BreakingS2CPacket.class);
         register(ChatS2CPacket.class);
         register(DisconnectS2CPacket.class);
+        register(IRCUsersS2CPacket.class);
         register(LoginSuccessS2CPacket.class);
         register(PlayerPositionS2CPacket.class);
+        register(PrivateMessageS2CPacket.class);
         register(ServerMessageS2CPacket.class);
     }
 
