@@ -32,6 +32,22 @@ public class IRCItemStack {
         return json;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public int getDamage() {
+        return damage;
+    }
+
+    public int getMaxDamage() {
+        return maxDamage;
+    }
+
     @Override
     public String toString() {
         return String.format("IRCItemStack{id:%s,count:%d,damage:%d,maxDamage:%d}", id, count, damage, maxDamage);

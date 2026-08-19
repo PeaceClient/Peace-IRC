@@ -3,16 +3,16 @@ package com.peace.packets.s2c;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
-import com.peace.util.BlockPos;
+import com.peace.util.IRCBlockPos;
 import org.jspecify.annotations.Nullable;
 
 @PacketId(0x05)
 public class PlayerPositionS2CPacket implements Packet {
     String username;
     // nullable means BlockPos isn't in render distance (removal when caching)
-    @Nullable BlockPos position;
+    @Nullable IRCBlockPos position;
 
-    public PlayerPositionS2CPacket(String username, @Nullable BlockPos position) {
+    public PlayerPositionS2CPacket(String username, @Nullable IRCBlockPos position) {
         this.username = username;
         this.position = position;
     }
@@ -26,11 +26,11 @@ public class PlayerPositionS2CPacket implements Packet {
             int x = jsonObject.get("x").getAsInt();
             int y = jsonObject.get("y").getAsInt();
             int z = jsonObject.get("z").getAsInt();
-            this.position = new BlockPos(x, y, z);
+            this.position = new IRCBlockPos(x, y, z);
         }
     }
 
-    public @Nullable BlockPos getPosition() {
+    public @Nullable IRCBlockPos getPosition() {
         return position;
     }
 

@@ -8,7 +8,7 @@ import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
 import com.peace.packets.s2c.*;
-import com.peace.util.BlockPos;
+import com.peace.util.IRCBlockPos;
 import com.peace.util.IRCInventory;
 import org.jspecify.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public class IRCServerThread implements Runnable {
 
     // Null when not breaking!
     private volatile boolean breakingChanged;
-    private volatile @Nullable BlockPos breakingPos;
+    private volatile @Nullable IRCBlockPos breakingPos;
     private volatile float breakingProgress;
 
     private volatile long lastChatMessage;
@@ -238,7 +238,7 @@ public class IRCServerThread implements Runnable {
         return shouldUpdate;
     }
 
-    public BlockPos getBreakingPosition() {
+    public IRCBlockPos getBreakingPosition() {
         return this.breakingPos;
     }
 

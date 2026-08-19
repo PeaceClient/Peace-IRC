@@ -1,16 +1,15 @@
 package com.peace.util;
 
-public class BlockPos {
+public class IRCBlockPos {
     private int x;
     private int y;
     private int z;
 
-    public BlockPos(int x, int y, int z) {
+    public IRCBlockPos(int x, int y, int z) {
         this.x = x;
         this.y = y;
         this.z = z;
     }
-
 
     public int getX() {
         return x;
@@ -24,7 +23,7 @@ public class BlockPos {
         return z;
     }
 
-    public double horizontalSquaredDistanceTo(BlockPos pos) {
+    public double horizontalSquaredDistanceTo(IRCBlockPos pos) {
         double x = this.getX() - pos.getX();
         double z = this.getZ() - pos.getZ();
         return x * x + z * z;
@@ -32,7 +31,7 @@ public class BlockPos {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof BlockPos blockPos)) return false;
+        if (!(obj instanceof IRCBlockPos blockPos)) return false;
         return getX() == blockPos.getX() && getY() == blockPos.getY() && getZ() == blockPos.getZ();
     }
 

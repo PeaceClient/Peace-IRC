@@ -4,7 +4,7 @@ import com.peace.VersionFeatures;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.s2c.*;
-import com.peace.util.BlockPos;
+import com.peace.util.IRCBlockPos;
 import com.peace.util.IRCInventory;
 
 import java.io.IOException;
@@ -104,7 +104,7 @@ public class IRCServerMain {
 
             for (IRCServerThread player : server.getValue().values()) {
                 if (player.shouldUpdateBreakingAndReset()) {
-                    BlockPos breakPos = player.getBreakingPosition();
+                    IRCBlockPos breakPos = player.getBreakingPosition();
                     float progress = player.getBreakingProgress();
 
                     Packet breakPacket = new BreakingS2CPacket(breakPos, progress, player.getUsername());
@@ -195,7 +195,7 @@ public class IRCServerMain {
         return getEntityStates(server).get(username);
     }
 
-    public void report(String server, String username, BlockPos pos, long now) {
+    public void report(String server, String username, IRCBlockPos pos, long now) {
         getEntityStates(server).put(username, new EntityState(pos, now));
     }
 
@@ -215,7 +215,7 @@ public class IRCServerMain {
         serverNameMap.clear();
     }
 
-    public record EntityState(BlockPos pos, long millis) {
+    public record EntityState(IRCBlockPos pos, long millis) {
     }
     public record InventoryRequest(IRCServerThread requester, long startMillis) {
     }

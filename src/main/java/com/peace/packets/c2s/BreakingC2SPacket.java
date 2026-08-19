@@ -3,16 +3,16 @@ package com.peace.packets.c2s;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
-import com.peace.util.BlockPos;
+import com.peace.util.IRCBlockPos;
 import org.jspecify.annotations.Nullable;
 
 @PacketId(0x06)
 public class BreakingC2SPacket implements Packet {
-    @Nullable BlockPos position;
+    @Nullable IRCBlockPos position;
     float breakingProgress;
 
     // null if not breaking!
-    public BreakingC2SPacket(@Nullable BlockPos position, float breakingProgress) {
+    public BreakingC2SPacket(@Nullable IRCBlockPos position, float breakingProgress) {
         this.position = position;
         this.breakingProgress = breakingProgress;
     }
@@ -26,12 +26,12 @@ public class BreakingC2SPacket implements Packet {
             int x = jsonObject.get("x").getAsInt();
             int y = jsonObject.get("y").getAsInt();
             int z = jsonObject.get("z").getAsInt();
-            this.position = new BlockPos(x, y, z);
+            this.position = new IRCBlockPos(x, y, z);
             this.breakingProgress = jsonObject.get("breakingProgress").getAsFloat();
         }
     }
 
-    public @Nullable BlockPos getPosition() {
+    public @Nullable IRCBlockPos getPosition() {
         return position;
     }
 

@@ -3,17 +3,16 @@ package com.peace.packets.s2c;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
-import com.peace.util.BlockPos;
-import com.peace.util.Vec2i;
+import com.peace.util.IRCBlockPos;
 import org.jspecify.annotations.Nullable;
 
 @PacketId(0x08)
 public class BreakingS2CPacket implements Packet {
-    @Nullable BlockPos position;
+    @Nullable IRCBlockPos position;
     float breakingProgress;
     String username;
 
-    public BreakingS2CPacket(BlockPos position, float breakingProgress, String username) {
+    public BreakingS2CPacket(@Nullable IRCBlockPos position, float breakingProgress, String username) {
         this.position = position;
         this.breakingProgress = breakingProgress;
         this.username = username;
@@ -30,11 +29,11 @@ public class BreakingS2CPacket implements Packet {
             int y = jsonObject.get("y").getAsInt();
             int z = jsonObject.get("z").getAsInt();
             this.breakingProgress = jsonObject.get("breakingProgress").getAsFloat();
-            this.position = new BlockPos(x, y, z);
+            this.position = new IRCBlockPos(x, y, z);
         }
     }
 
-    public @Nullable BlockPos getPosition() {
+    public @Nullable IRCBlockPos getPosition() {
         return position;
     }
 

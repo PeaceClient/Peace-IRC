@@ -3,14 +3,14 @@ package com.peace.packets.c2s;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
-import com.peace.util.BlockPos;
+import com.peace.util.IRCBlockPos;
 
 @PacketId(0x04)
 public class SeenEntityC2SPacket implements Packet {
     String username;
-    BlockPos position;
+    IRCBlockPos position;
 
-    public SeenEntityC2SPacket(String username, BlockPos position) {
+    public SeenEntityC2SPacket(String username, IRCBlockPos position) {
         this.username = username;
         this.position = position;
     }
@@ -21,10 +21,10 @@ public class SeenEntityC2SPacket implements Packet {
         int x = jsonObject.get("x").getAsInt();
         int y = jsonObject.get("y").getAsInt();
         int z = jsonObject.get("z").getAsInt();
-        this.position = new BlockPos(x, y, z);
+        this.position = new IRCBlockPos(x, y, z);
     }
 
-    public BlockPos getPosition() {
+    public IRCBlockPos getPosition() {
         return position;
     }
 
