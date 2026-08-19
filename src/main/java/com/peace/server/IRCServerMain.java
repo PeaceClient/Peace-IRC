@@ -166,9 +166,8 @@ public class IRCServerMain {
         if (server != null && username != null) {
             this.getUsers(server).remove(username);
             if (this.getUsers(server).isEmpty()) this.serverNameMap.remove(server); // remove server from nesting
+            this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
         }
-
-        this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
     }
 
     private void broadcastIRCUser(String username, String server, IRCUsersS2CPacket.Action action) {

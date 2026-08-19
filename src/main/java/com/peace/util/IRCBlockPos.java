@@ -1,5 +1,9 @@
 package com.peace.util;
 
+import com.google.gson.JsonObject;
+
+import java.util.Map;
+
 public class IRCBlockPos {
     private int x;
     private int y;
@@ -9,6 +13,12 @@ public class IRCBlockPos {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    public IRCBlockPos(JsonObject object) {
+        this.x = object.get("x").getAsInt();
+        this.y = object.get("y").getAsInt();
+        this.z = object.get("z").getAsInt();
     }
 
     public int getX() {
@@ -27,6 +37,14 @@ public class IRCBlockPos {
         double x = this.getX() - pos.getX();
         double z = this.getZ() - pos.getZ();
         return x * x + z * z;
+    }
+
+    public JsonObject toJson() {
+        JsonObject object = new JsonObject();
+        object.addProperty("x", this.x);
+        object.addProperty("y", this.y);
+        object.addProperty("z", this.z);
+        return object;
     }
 
     @Override
