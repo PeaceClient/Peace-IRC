@@ -1,8 +1,5 @@
 package com.peace.server;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.peace.VersionFeatures;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
@@ -12,10 +9,7 @@ import com.peace.util.IRCBlockPos;
 import com.peace.util.IRCInventory;
 import org.jspecify.annotations.Nullable;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -24,8 +18,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class IRCServerThread implements Runnable {
     private Socket clientSocket;
     private final IRCServerMain serverMain;
-    private PrintWriter out;
-    private BufferedReader in;
+
+    private DataOutputStream out;
+    private DataInputStream in;
 
     private final BlockingQueue<Packet> outgoingQueue = new LinkedBlockingQueue<>();
     private volatile boolean running;
@@ -55,28 +50,32 @@ public class IRCServerThread implements Runnable {
         this.connectMillis = System.currentTimeMillis(); // technically wrong but after init .run() gets called anyways
     }
 
-    /**
-     * Packet docs
-     * {type: "type", data: {}}
-     */
     @Override
     public void run() {
         this.serverMain.notLoggedInSet.add(this);
         this.running = true;
 
         try {
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            in = new DataInputStream(clientSocket.getInputStream());
+            out = new DataOutputStream(clientSocket.getOutputStream());
 
             startWriterThread();
 
-            String inputLine;
-            while (in != null && (inputLine = in.readLine()) != null) {
-                JsonElement element = JsonParser.parseString(inputLine);
+            while (running) {
+                int length;
+                try {
+                    length = in.readInt();
+                } catch (EOFException exception) {
+                    // graceful end
+                    break;
+                }
 
-                JsonObject root = element.getAsJsonObject();
+                byte[] payload = new byte[length];
+                in.readFully(payload);
+                // wrapper
+                DataInputStream payloadIn = new DataInputStream(new ByteArrayInputStream(payload));
 
-                Packet packet = PacketFactory.createPacket(root);
+                Packet packet = PacketFactory.createPacket(payloadIn);
 
                 if (packet instanceof DisconnectC2SPacket) {
                     this.disconnect("User disconnect");
@@ -88,7 +87,7 @@ public class IRCServerThread implements Runnable {
             }
         } catch (Exception e) {
             System.out.println("Failure in handling packets");
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         } finally {
             disconnect("User disconnect");
         }
@@ -99,11 +98,9 @@ public class IRCServerThread implements Runnable {
             try {
                 while (running) {
                     Packet packet = outgoingQueue.take(); // blocks
-                    if (clientSocket != null && !clientSocket.isClosed() && out != null) {
-                        out.println(PacketFactory.serializePacket(packet));
-                    }
+                    writeInternal(packet);
                 }
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 Thread.currentThread().interrupt();
             } finally {
                 disconnect();
@@ -222,6 +219,21 @@ public class IRCServerThread implements Runnable {
         }
     }
 
+    private void writeInternal(Packet packet) throws IOException {
+        if (clientSocket != null && !clientSocket.isClosed() && out != null) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream tmpOut = new DataOutputStream(baos);
+
+            PacketFactory.serializePacket(tmpOut, packet);
+            tmpOut.flush();
+
+            byte[] payload = baos.toByteArray();
+            out.writeInt(payload.length);
+            out.write(payload);
+            out.flush();
+        }
+    }
+
     public void sendServerMessage(String text) {
         sendPacket(new ServerMessageS2CPacket(text));
     }
@@ -277,9 +289,12 @@ public class IRCServerThread implements Runnable {
     public void disconnect(String reason, boolean remove) {
         if (!this.running) return;
         this.running = false;
-        if (clientSocket != null && !clientSocket.isClosed() && out != null) {
-            out.println(PacketFactory.serializePacket(new DisconnectS2CPacket(reason)));
+
+        try {
+            writeInternal(new DisconnectS2CPacket(reason));
+        } catch (IOException ignored) {
         }
+
         try {
             if (remove) this.serverMain.remove(this);
             if (in != null) in.close();

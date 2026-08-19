@@ -1,8 +1,8 @@
 package com.peace.util;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,10 +13,14 @@ public class IRCInventory {
        this.itemStackMap = map;
     }
 
-    public IRCInventory(JsonObject object) {
-        this.itemStackMap = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : object.asMap().entrySet()) {
-            this.itemStackMap.put(Integer.parseInt(entry.getKey()), new IRCItemStack(entry.getValue().getAsJsonObject()));
+    public IRCInventory(DataInput in) throws IOException {
+        int size = in.readInt();
+        if (size > 255) throw new IllegalArgumentException("Size of inventory > 255!");
+        this.itemStackMap = new HashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            int slot = in.readInt();
+            IRCItemStack stack = new IRCItemStack(in);
+            itemStackMap.put(slot, stack);
         }
     }
 
@@ -24,11 +28,11 @@ public class IRCInventory {
         return itemStackMap;
     }
 
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        for (Map.Entry<Integer, IRCItemStack> entry : this.itemStackMap.entrySet()) {
-            object.add(String.valueOf(entry.getKey()), entry.getValue().toJson());
+    public void encode(DataOutput out) throws IOException {
+        out.writeInt(this.itemStackMap.size());
+        for (Map.Entry<Integer, IRCItemStack> entry : itemStackMap.entrySet()) {
+            out.writeInt(entry.getKey());
+            entry.getValue().encode(out);
         }
-        return object;
     }
 }

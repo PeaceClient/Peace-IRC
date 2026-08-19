@@ -1,10 +1,13 @@
 package com.peace.packets.c2s;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCBlockPos;
 import org.jspecify.annotations.Nullable;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x06)
 public class BreakingC2SPacket implements Packet {
@@ -17,17 +20,14 @@ public class BreakingC2SPacket implements Packet {
         this.breakingProgress = breakingProgress;
     }
 
-    public BreakingC2SPacket(JsonObject jsonObject) {
-        boolean breaking = jsonObject.get("breaking").getAsBoolean();
+    public BreakingC2SPacket(DataInput in) throws IOException {
+        boolean breaking = in.readBoolean();
         if (!breaking) {
-            position = null;
+            this.position = null;
             this.breakingProgress = 0;
         } else {
-            int x = jsonObject.get("x").getAsInt();
-            int y = jsonObject.get("y").getAsInt();
-            int z = jsonObject.get("z").getAsInt();
-            this.position = new IRCBlockPos(x, y, z);
-            this.breakingProgress = jsonObject.get("breakingProgress").getAsFloat();
+            this.position = new IRCBlockPos(in);
+            this.breakingProgress = in.readFloat();
         }
     }
 
@@ -40,20 +40,15 @@ public class BreakingC2SPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
+    public void encode(DataOutput out) throws IOException {
         boolean breaking = this.position != null;
 
-        object.addProperty("breaking", breaking);
-        if (!breaking) return object;
+        out.writeBoolean(breaking);
+        // null?
+        if (!breaking) return;
 
-        object.addProperty("x", this.position.getX());
-        object.addProperty("y", this.position.getY());
-        object.addProperty("z", this.position.getZ());
-        object.addProperty("breakingProgress", this.breakingProgress);
-
-
-        return object;
+        this.position.encode(out);
+        out.writeFloat(this.breakingProgress);
     }
 }
 

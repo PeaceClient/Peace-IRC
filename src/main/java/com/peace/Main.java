@@ -30,10 +30,11 @@ public class Main implements Runnable {
             try {
                 serverMain.run();
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         });
         serverMainThread.start();
+
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down!");

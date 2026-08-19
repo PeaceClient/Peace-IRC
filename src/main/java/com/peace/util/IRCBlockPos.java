@@ -1,8 +1,8 @@
 package com.peace.util;
 
-import com.google.gson.JsonObject;
-
-import java.util.Map;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 public class IRCBlockPos {
     private int x;
@@ -15,10 +15,10 @@ public class IRCBlockPos {
         this.z = z;
     }
 
-    public IRCBlockPos(JsonObject object) {
-        this.x = object.get("x").getAsInt();
-        this.y = object.get("y").getAsInt();
-        this.z = object.get("z").getAsInt();
+    public IRCBlockPos(DataInput in) throws IOException {
+        this.x = in.readInt();
+        this.y = in.readInt();
+        this.z = in.readInt();
     }
 
     public int getX() {
@@ -39,12 +39,10 @@ public class IRCBlockPos {
         return x * x + z * z;
     }
 
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("x", this.x);
-        object.addProperty("y", this.y);
-        object.addProperty("z", this.z);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        out.writeInt(this.x);
+        out.writeInt(this.y);
+        out.writeInt(this.z);
     }
 
     @Override

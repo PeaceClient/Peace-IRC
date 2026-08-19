@@ -178,6 +178,8 @@ public class IRCServerMain {
         }
     }
 
+
+
     public void broadcastAllIRCUsers(IRCServerThread player) {
         if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
             List<String> playersOnServer = List.copyOf(getUsers(player.getServer()).keySet());

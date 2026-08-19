@@ -1,8 +1,11 @@
 package com.peace.packets.s2c;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x0e)
 public class RequestPlayerInventoryS2CPacket implements Packet {
@@ -13,8 +16,8 @@ public class RequestPlayerInventoryS2CPacket implements Packet {
         this.id = id;
     }
 
-    public RequestPlayerInventoryS2CPacket(JsonObject jsonObject) {
-        this.id = jsonObject.get("id").getAsInt();
+    public RequestPlayerInventoryS2CPacket(DataInput in) throws IOException {
+        this.id = in.readInt();
     }
 
     public int getId() {
@@ -22,9 +25,7 @@ public class RequestPlayerInventoryS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("id", this.id);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        out.writeInt(this.id);
     }
 }

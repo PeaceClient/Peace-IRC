@@ -1,9 +1,12 @@
 package com.peace.packets;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.c2s.*;
 import com.peace.packets.s2c.*;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +14,7 @@ import java.util.function.Function;
 
 public class PacketFactory {
     public static final int PROTOCOL_VERSION = 2;
-    private static final Map<Byte, Function<JsonObject, Packet>> REGISTRY = new HashMap<>();
+    private static final Map<Byte, Function<DataInput, Packet>> REGISTRY = new HashMap<>();
 
     static {
         register(BreakingC2SPacket.class);
@@ -45,7 +48,7 @@ public class PacketFactory {
         byte packetId = idAnnotation.value();
 
         try {
-            Constructor<? extends Packet> constructor = clazz.getConstructor(JsonObject.class);
+            Constructor<? extends Packet> constructor = clazz.getConstructor(DataInput.class);
             REGISTRY.put(packetId, (data) -> {
                 try {
                     return constructor.newInstance(data);
@@ -54,27 +57,22 @@ public class PacketFactory {
                 }
             });
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException("Class missing constructor (JsonObject): " + clazz.getName(), e);
+            throw new RuntimeException("Class missing constructor (DataInput): " + clazz.getName(), e);
         }
     }
 
-    public static Packet createPacket(JsonObject json) {
-        byte type = json.get("type").getAsByte();
-        JsonObject data = json.getAsJsonObject("data");
-
-        Function<JsonObject, Packet> factory = REGISTRY.get(type);
+    public static Packet createPacket(DataInputStream in) throws IOException {
+        byte type = in.readByte();
+        Function<DataInput, Packet> factory = REGISTRY.get(type);
         if (factory == null) {
             throw new IllegalArgumentException("Unknown packet type: " + type);
         }
-        return factory.apply(data);
+        return factory.apply(in);
     }
 
-    public static JsonObject serializePacket(Packet packet) {
+    public static void serializePacket(DataOutput out, Packet packet) throws IOException {
         byte type = packet.getClass().getAnnotation(PacketId.class).value();
-
-        JsonObject object = new JsonObject();
-        object.addProperty("type", type);
-        object.add("data", packet.toJson());
-        return object;
+        out.writeByte(type);
+        packet.encode(out);
     }
 }

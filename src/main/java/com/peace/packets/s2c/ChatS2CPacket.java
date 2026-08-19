@@ -1,8 +1,12 @@
 package com.peace.packets.s2c;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x0A)
 public class ChatS2CPacket implements Packet {
@@ -14,9 +18,9 @@ public class ChatS2CPacket implements Packet {
         this.message = message;
     }
 
-    public ChatS2CPacket(JsonObject jsonObject) {
-        this.username = jsonObject.get("username").getAsString();
-        this.message = jsonObject.get("message").getAsString();
+    public ChatS2CPacket(DataInput in) throws IOException {
+        this.username = IRCNetworkUtils.decodeString(in, 1, 20);
+        this.message = IRCNetworkUtils.decodeString(in, 1, 255);
     }
 
     public String getUsername() {
@@ -28,10 +32,8 @@ public class ChatS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("username", this.username);
-        object.addProperty("message", this.message);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.username);
+        IRCNetworkUtils.encodeString(out, this.message);
     }
 }

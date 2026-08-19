@@ -1,8 +1,12 @@
 package com.peace.packets.s2c;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x0D)
 public class PrivateMessageS2CPacket implements Packet {
@@ -16,10 +20,10 @@ public class PrivateMessageS2CPacket implements Packet {
         this.ownMessage = ownMessage;
     }
 
-    public PrivateMessageS2CPacket(JsonObject jsonObject) {
-        this.sender = jsonObject.get("sender").getAsString();
-        this.message = jsonObject.get("message").getAsString();
-        this.ownMessage = jsonObject.get("ownMessage").getAsBoolean();
+    public PrivateMessageS2CPacket(DataInput in) throws IOException {
+        this.sender = IRCNetworkUtils.decodeString(in, 1, 20);
+        this.message = IRCNetworkUtils.decodeString(in, 1, 255);
+        this.ownMessage = in.readBoolean();
     }
 
     public String getSender() {
@@ -35,11 +39,9 @@ public class PrivateMessageS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("sender", this.sender);
-        object.addProperty("message", this.message);
-        object.addProperty("ownMessage", this.ownMessage);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.sender);
+        IRCNetworkUtils.encodeString(out, this.message);
+        out.writeBoolean(this.ownMessage);
     }
 }
