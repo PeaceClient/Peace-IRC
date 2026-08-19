@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCInventory;
-
+/*
 @PacketId(0x11)
 public class SendPlayerInventoryS2CPacket implements Packet {
     String username;
@@ -29,10 +29,13 @@ public class SendPlayerInventoryS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
+    public JsonObject encode() {
         JsonObject object = new JsonObject();
         object.addProperty("username", this.username);
         object.add("inventory", this.inventory.toJson());
         return object;
     }
 }
+
+
+ */

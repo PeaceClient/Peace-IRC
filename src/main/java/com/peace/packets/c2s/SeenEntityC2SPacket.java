@@ -4,6 +4,11 @@ import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCBlockPos;
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x04)
 public class SeenEntityC2SPacket implements Packet {
@@ -15,13 +20,9 @@ public class SeenEntityC2SPacket implements Packet {
         this.position = position;
     }
 
-    public SeenEntityC2SPacket(JsonObject jsonObject) {
-        this.username = jsonObject.get("username").getAsString();
-
-        int x = jsonObject.get("x").getAsInt();
-        int y = jsonObject.get("y").getAsInt();
-        int z = jsonObject.get("z").getAsInt();
-        this.position = new IRCBlockPos(x, y, z);
+    public SeenEntityC2SPacket(DataInput in) throws IOException {
+        this.username = IRCNetworkUtils.decodeString(in, 1, 20);
+        this.position = new IRCBlockPos(in);
     }
 
     public IRCBlockPos getPosition() {
@@ -33,13 +34,8 @@ public class SeenEntityC2SPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("username", this.username);
-
-        object.addProperty("x", this.position.getX());
-        object.addProperty("y", this.position.getY());
-        object.addProperty("z", this.position.getZ());
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.username);
+        this.position.encode(out);
     }
 }

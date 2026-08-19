@@ -6,6 +6,10 @@ import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCInventory;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 @PacketId(0x10)
 public class SendPlayerInventoryC2SPacket implements Packet {
     int id;
@@ -16,9 +20,9 @@ public class SendPlayerInventoryC2SPacket implements Packet {
         this.inventory = inventory;
     }
 
-    public SendPlayerInventoryC2SPacket(JsonObject jsonObject) {
-        this.id = jsonObject.get("id").getAsInt();
-        this.inventory = new IRCInventory(jsonObject.get("inventory").getAsJsonObject());
+    public SendPlayerInventoryC2SPacket(DataInput in) {
+        //this.id = jsonObject.get("id").getAsInt();
+        //this.inventory = new IRCInventory(jsonObject.get("inventory").getAsJsonObject());
     }
 
     public int getId() {
@@ -28,13 +32,20 @@ public class SendPlayerInventoryC2SPacket implements Packet {
     public IRCInventory getInventory() {
         return inventory;
     }
-
+/*
     @Override
-    public JsonObject toJson() {
+    public JsonObject encode() {
         JsonObject object = new JsonObject();
         object.addProperty("id", this.id);
         object.add("inventory", this.inventory.toJson());
         return object;
+    }
+
+
+ */
+    @Override
+    public void encode(DataOutput out) throws IOException {
+
     }
 }
 

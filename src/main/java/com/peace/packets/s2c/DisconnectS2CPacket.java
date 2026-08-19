@@ -3,6 +3,11 @@ package com.peace.packets.s2c;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x0f)
 public class DisconnectS2CPacket implements Packet {
@@ -12,8 +17,8 @@ public class DisconnectS2CPacket implements Packet {
         this.reason = reason;
     }
 
-    public DisconnectS2CPacket(JsonObject jsonObject) {
-        this.reason = jsonObject.get("reason").getAsString();
+    public DisconnectS2CPacket(DataInput in) throws IOException {
+        this.reason = IRCNetworkUtils.decodeString(in, 0, 255);
     }
 
     public String getReason() {
@@ -21,10 +26,8 @@ public class DisconnectS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("reason", this.reason);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.reason);
     }
 }
 

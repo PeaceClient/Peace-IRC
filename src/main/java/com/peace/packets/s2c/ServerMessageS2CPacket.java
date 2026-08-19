@@ -3,6 +3,11 @@ package com.peace.packets.s2c;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x02)
 public class ServerMessageS2CPacket implements Packet {
@@ -12,8 +17,8 @@ public class ServerMessageS2CPacket implements Packet {
         this.message = message;
     }
 
-    public ServerMessageS2CPacket(JsonObject jsonObject) {
-        this.message = jsonObject.get("message").getAsString();
+    public ServerMessageS2CPacket(DataInput in) throws IOException {
+        this.message = IRCNetworkUtils.decodeString(in, 1, 255);
     }
 
     public String getMessage() {
@@ -21,9 +26,7 @@ public class ServerMessageS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("message", this.message);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.message);
     }
 }

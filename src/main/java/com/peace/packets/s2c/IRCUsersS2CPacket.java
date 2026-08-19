@@ -8,7 +8,7 @@ import com.peace.packets.PacketId;
 
 import java.util.ArrayList;
 import java.util.List;
-
+/*
 @PacketId(0x0B)
 public class IRCUsersS2CPacket implements Packet {
     List<String> usernames;
@@ -44,7 +44,7 @@ public class IRCUsersS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
+    public JsonObject encode() {
         JsonObject object = new JsonObject();
 
         JsonArray userArray = new JsonArray();
@@ -63,3 +63,5 @@ public class IRCUsersS2CPacket implements Packet {
         Remove
     }
 }
+
+ */

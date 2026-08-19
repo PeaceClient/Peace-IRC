@@ -1,9 +1,10 @@
 package com.peace.packets;
 
-import com.google.gson.JsonObject;
+import java.io.DataOutput;
+import java.io.IOException;
 
 public interface Packet {
     // Root passed onto constructor and this serializes it
     // NOTE: constructor called from elsewhere in PacketFactory
-    JsonObject toJson();
+    void encode(DataOutput out) throws IOException;
 }

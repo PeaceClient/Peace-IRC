@@ -4,7 +4,12 @@ import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCBlockPos;
+import com.peace.util.IRCNetworkUtils;
 import org.jspecify.annotations.Nullable;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 @PacketId(0x05)
 public class PlayerPositionS2CPacket implements Packet {
@@ -17,16 +22,13 @@ public class PlayerPositionS2CPacket implements Packet {
         this.position = position;
     }
 
-    public PlayerPositionS2CPacket(JsonObject jsonObject) {
-        this.username = jsonObject.get("username").getAsString();
-        boolean visible = jsonObject.get("visible").getAsBoolean();
+    public PlayerPositionS2CPacket(DataInput in) throws IOException {
+        this.username = IRCNetworkUtils.decodeString(in, 1, 20);
+        boolean visible = in.readBoolean();
         if (!visible) {
             this.position = null;
         } else {
-            int x = jsonObject.get("x").getAsInt();
-            int y = jsonObject.get("y").getAsInt();
-            int z = jsonObject.get("z").getAsInt();
-            this.position = new IRCBlockPos(x, y, z);
+            this.position = new IRCBlockPos(in);
         }
     }
 
@@ -39,18 +41,12 @@ public class PlayerPositionS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject toJson() {
-        JsonObject object = new JsonObject();
-        object.addProperty("username", this.username);
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.username);
 
         boolean visible = position != null;
-        object.addProperty("visible", visible);
-
-        if (!visible) return object;
-
-        object.addProperty("x", this.position.getX());
-        object.addProperty("y", this.position.getY());
-        object.addProperty("z", this.position.getZ());
-        return object;
+        out.writeBoolean(visible);
+        if (!visible) return;
+        this.position.encode(out);
     }
 }
