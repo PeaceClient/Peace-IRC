@@ -90,6 +90,7 @@ public class IRCClientMain {
                 }
             } catch (Exception exception) {
                 System.out.println("Error with reading packet");
+                exception.printStackTrace(System.out);
             } finally {
                 disconnect();
             }

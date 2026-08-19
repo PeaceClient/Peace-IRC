@@ -40,7 +40,7 @@ public class IRCNetworkUtils {
         List<String> list = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String string = decodeString(in, minStrLen, maxStrLen);
-            list.set(i, string);
+            list.add(string);
         }
 
         return list;
