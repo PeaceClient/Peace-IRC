@@ -3,4 +3,6 @@ IRC server for peace-client
 
 
 ### TODO:
-- inventory serialization for inventory sharing (per-request basis)
+- write local tests for the code/networking
+- fix every bug/issue with the code
+- add more features

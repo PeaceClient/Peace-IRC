@@ -29,7 +29,7 @@ public class IRCInventory {
     }
 
     public void encode(DataOutput out) throws IOException {
-        out.write(this.itemStackMap.size());
+        out.writeInt(this.itemStackMap.size());
         for (Map.Entry<Integer, IRCItemStack> entry : itemStackMap.entrySet()) {
             out.writeInt(entry.getKey());
             entry.getValue().encode(out);

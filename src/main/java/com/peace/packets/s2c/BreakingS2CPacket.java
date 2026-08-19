@@ -54,5 +54,6 @@ public class BreakingS2CPacket implements Packet {
 
         if (!breaking) return;
         this.position.encode(out);
+        out.writeFloat(this.breakingProgress);
     }
 }
