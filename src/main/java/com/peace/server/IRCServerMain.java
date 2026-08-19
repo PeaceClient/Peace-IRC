@@ -145,7 +145,7 @@ public class IRCServerMain {
             return;
         }
 
-        //request.requester().sendPacket(new SendPlayerInventoryS2CPacket(fulfiller.getUsername(), inventory));
+        request.requester().sendPacket(new SendPlayerInventoryS2CPacket(fulfiller.getUsername(), inventory));
         pendingRequests.remove(id);
     }
 
@@ -156,7 +156,7 @@ public class IRCServerMain {
 
     public void add(IRCServerThread serverThread) {
         getUsers(serverThread.getServer()).put(serverThread.getUsername(), serverThread);
-        //this.broadcastIRCUser(serverThread.getUsername(), serverThread.getServer(), IRCUsersS2CPacket.Action.Add);
+        this.broadcastIRCUser(serverThread.getUsername(), serverThread.getServer(), IRCUsersS2CPacket.Action.Add);
     }
 
     public void remove(IRCServerThread serverThread) {
@@ -166,10 +166,10 @@ public class IRCServerMain {
         if (server != null && username != null) {
             this.getUsers(server).remove(username);
             if (this.getUsers(server).isEmpty()) this.serverNameMap.remove(server); // remove server from nesting
-            //this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
+            this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
         }
     }
-/*
+
     private void broadcastIRCUser(String username, String server, IRCUsersS2CPacket.Action action) {
         for (IRCServerThread player : getUsers(server).values()) {
             if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
@@ -178,13 +178,13 @@ public class IRCServerMain {
         }
     }
 
- */
+
 
     public void broadcastAllIRCUsers(IRCServerThread player) {
         if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
             List<String> playersOnServer = List.copyOf(getUsers(player.getServer()).keySet());
             // don't announce, these are not new players!
-           // player.sendPacket(new IRCUsersS2CPacket(playersOnServer, IRCUsersS2CPacket.Action.Add, false));
+            player.sendPacket(new IRCUsersS2CPacket(playersOnServer, IRCUsersS2CPacket.Action.Add, false));
         }
     }
 

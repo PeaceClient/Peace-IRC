@@ -159,11 +159,9 @@ public class IRCClientMain {
             eventHandler.onIrcChat(this, chatS2CPacket.getUsername(), chatS2CPacket.getMessage());
         }
 
-        /*if (packet instanceof IRCUsersS2CPacket ircUsersS2CPacket) {
+        if (packet instanceof IRCUsersS2CPacket ircUsersS2CPacket) {
             eventHandler.onIRCUserUpdate(this, ircUsersS2CPacket.getUsernames(), ircUsersS2CPacket.getAction(), ircUsersS2CPacket.shouldAnnounce());
         }
-
-         */
 
 
         if (packet instanceof PrivateMessageS2CPacket privateMessageS2CPacket) {
@@ -174,9 +172,9 @@ public class IRCClientMain {
             eventHandler.onServerRequestInventory(this, requestPlayerInventoryS2CPacket.getId());
         }
 
-//        if (packet instanceof SendPlayerInventoryS2CPacket sendPlayerInventoryS2CPacket) {
-//            eventHandler.onReceiveInventory(this, sendPlayerInventoryS2CPacket.getUsername(), sendPlayerInventoryS2CPacket.getInventory());
-//        }
+        if (packet instanceof SendPlayerInventoryS2CPacket sendPlayerInventoryS2CPacket) {
+            eventHandler.onReceiveInventory(this, sendPlayerInventoryS2CPacket.getUsername(), sendPlayerInventoryS2CPacket.getInventory());
+        }
     }
 
     public void doLogin() {

@@ -1,10 +1,14 @@
 package com.peace.packets.s2c;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCInventory;
-/*
+import com.peace.util.IRCNetworkUtils;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 @PacketId(0x11)
 public class SendPlayerInventoryS2CPacket implements Packet {
     String username;
@@ -15,9 +19,9 @@ public class SendPlayerInventoryS2CPacket implements Packet {
         this.inventory = inventory;
     }
 
-    public SendPlayerInventoryS2CPacket(JsonObject jsonObject) {
-        this.username = jsonObject.get("username").getAsString();
-        this.inventory = new IRCInventory(jsonObject.get("inventory").getAsJsonObject());
+    public SendPlayerInventoryS2CPacket(DataInput in) throws IOException {
+        this.username = IRCNetworkUtils.decodeString(in, 1, 20);
+        this.inventory = new IRCInventory(in);
     }
 
     public String getUsername() {
@@ -29,13 +33,8 @@ public class SendPlayerInventoryS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject encode() {
-        JsonObject object = new JsonObject();
-        object.addProperty("username", this.username);
-        object.add("inventory", this.inventory.toJson());
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.username);
+        this.inventory.encode(out);
     }
 }
-
-
- */

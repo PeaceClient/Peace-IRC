@@ -5,10 +5,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
+import com.peace.util.IRCNetworkUtils;
 
+import javax.xml.crypto.Data;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-/*
+
 @PacketId(0x0B)
 public class IRCUsersS2CPacket implements Packet {
     List<String> usernames;
@@ -21,14 +26,10 @@ public class IRCUsersS2CPacket implements Packet {
         this.announce = announce;
     }
 
-    public IRCUsersS2CPacket(JsonObject jsonObject) {
-        usernames = new ArrayList<>();
-        for (JsonElement element : jsonObject.get("usernames").getAsJsonArray()) {
-            usernames.add(element.getAsString());
-        }
-
-        action = Action.values()[jsonObject.get("action").getAsShort()];
-        announce = jsonObject.get("announce").getAsBoolean();
+    public IRCUsersS2CPacket(DataInput in) throws IOException {
+        this.usernames = IRCNetworkUtils.decodeStringList(in, 256, 1, 20);
+        this.action = Action.values()[in.readInt()];
+        this.announce = in.readBoolean();
     }
 
     public List<String> getUsernames() {
@@ -44,18 +45,10 @@ public class IRCUsersS2CPacket implements Packet {
     }
 
     @Override
-    public JsonObject encode() {
-        JsonObject object = new JsonObject();
-
-        JsonArray userArray = new JsonArray();
-        for (String username : this.usernames) {
-            userArray.add(username);
-        }
-
-        object.add("usernames", userArray);
-        object.addProperty("action", this.action.ordinal());
-        object.addProperty("announce", this.announce);
-        return object;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeStringList(out, this.usernames);
+        out.writeInt(this.action.ordinal());
+        out.writeBoolean(this.announce);
     }
 
     public enum Action {
@@ -64,4 +57,4 @@ public class IRCUsersS2CPacket implements Packet {
     }
 }
 
- */
+

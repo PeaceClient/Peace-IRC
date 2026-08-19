@@ -30,12 +30,12 @@ public class PacketFactory {
         register(BreakingS2CPacket.class);
         register(ChatS2CPacket.class);
         register(DisconnectS2CPacket.class);
-       // register(IRCUsersS2CPacket.class);
+        register(IRCUsersS2CPacket.class);
         register(LoginSuccessS2CPacket.class);
         register(PlayerPositionS2CPacket.class);
         register(PrivateMessageS2CPacket.class);
         register(RequestPlayerInventoryS2CPacket.class);
-        //register(SendPlayerInventoryS2CPacket.class);
+        register(SendPlayerInventoryS2CPacket.class);
         register(ServerMessageS2CPacket.class);
     }
 

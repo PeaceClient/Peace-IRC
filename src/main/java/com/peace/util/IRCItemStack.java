@@ -2,6 +2,10 @@ package com.peace.util;
 
 import com.google.gson.JsonObject;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 // simple data class for an ItemStack
 public class IRCItemStack {
     private final String id;
@@ -16,20 +20,18 @@ public class IRCItemStack {
         this.maxDamage = maxDamage;
     }
 
-    public IRCItemStack(JsonObject json) {
-        this.id = json.get("id").getAsString();
-        this.count = json.get("count").getAsInt();
-        this.damage = json.get("damage").getAsInt();
-        this.maxDamage = json.get("maxDamage").getAsInt();
+    public IRCItemStack(DataInput in) throws IOException {
+        this.id = IRCNetworkUtils.decodeString(in, 0, 255);
+        this.count = in.readInt();
+        this.damage = in.readInt();
+        this.maxDamage = in.readInt();
     }
 
-    public JsonObject toJson() {
-        JsonObject json = new JsonObject();
-        json.addProperty("id", this.id);
-        json.addProperty("count", this.count);
-        json.addProperty("damage", this.damage);
-        json.addProperty("maxDamage", this.maxDamage);
-        return json;
+    public void encode(DataOutput out) throws IOException {
+        IRCNetworkUtils.encodeString(out, this.id);
+        out.writeInt(this.count);
+        out.writeInt(this.damage);
+        out.writeInt(this.maxDamage);
     }
 
     public String getId() {
