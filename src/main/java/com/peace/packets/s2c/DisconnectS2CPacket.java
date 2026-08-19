@@ -1,6 +1,5 @@
 package com.peace.packets.s2c;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 import com.peace.util.IRCNetworkUtils;

@@ -1,11 +1,8 @@
 package com.peace.util;
 
-import com.google.gson.JsonObject;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Map;
 
 public class IRCBlockPos {
     private int x;

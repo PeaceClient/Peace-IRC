@@ -1,6 +1,5 @@
 package com.peace.packets;
 
-import com.google.gson.JsonObject;
 import com.peace.packets.c2s.*;
 import com.peace.packets.s2c.*;
 
