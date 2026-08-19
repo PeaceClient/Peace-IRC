@@ -52,6 +52,14 @@ public class IRCBlockPos {
     }
 
     @Override
+    public int hashCode() {
+        int result = getX();
+        result = 31 * result + getY();
+        result = 31 * result + getZ();
+        return result;
+    }
+
+    @Override
     public String toString() {
         return String.format("{%d, %d, %d}", getX(), getY(), getZ());
     }

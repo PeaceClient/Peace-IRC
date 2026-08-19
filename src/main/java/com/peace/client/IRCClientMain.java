@@ -149,7 +149,8 @@ public class IRCClientMain {
         }
 
         if (packet instanceof PlayerPositionS2CPacket playerPositionS2CPacket) {
-            eventHandler.onPositionReceive(this, playerPositionS2CPacket.getUsername(), playerPositionS2CPacket.getPosition());
+            eventHandler.onPositionReceive(this, playerPositionS2CPacket.getUsername(), playerPositionS2CPacket.getPosition(),
+                    playerPositionS2CPacket.getHealth(), playerPositionS2CPacket.getEquipment());
         }
 
         if (packet instanceof ServerMessageS2CPacket serverMessageS2CPacket) {

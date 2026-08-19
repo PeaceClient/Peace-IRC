@@ -148,10 +148,8 @@ public class IRCServerThread implements Runnable {
     public void handlePacket(Packet packet) {
         long now = System.currentTimeMillis();
         if (packet instanceof SeenEntityC2SPacket updatePositionC2SPacket) {
-            IRCServerMain.EntityState serverPosition = serverMain.getEntityState(server, updatePositionC2SPacket.getUsername());
-            if (serverPosition == null || serverPosition.millis() < now) {
-                this.serverMain.report(this.server, updatePositionC2SPacket.getUsername(), updatePositionC2SPacket.getPosition(), now);
-            }
+            this.serverMain.report(this.server, updatePositionC2SPacket.getUsername(), updatePositionC2SPacket.getPosition(),
+                    updatePositionC2SPacket.getHealth(), updatePositionC2SPacket.getEquipment(), now);
             return;
         }
         if (packet instanceof BreakingC2SPacket breakingC2SPacket) {

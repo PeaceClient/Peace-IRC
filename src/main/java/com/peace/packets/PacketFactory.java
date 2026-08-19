@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class PacketFactory {
-    public static final int PROTOCOL_VERSION = 2;
+    public static final int PROTOCOL_VERSION = 3;
     private static final Map<Byte, Function<DataInput, Packet>> REGISTRY = new HashMap<>();
 
     static {
