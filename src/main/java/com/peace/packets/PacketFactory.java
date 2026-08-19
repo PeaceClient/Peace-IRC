@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class PacketFactory {
-    public static final int PROTOCOL_VERSION = 1;
+    public static final int PROTOCOL_VERSION = 2;
     private static final Map<Byte, Function<JsonObject, Packet>> REGISTRY = new HashMap<>();
 
     static {
@@ -19,8 +19,9 @@ public class PacketFactory {
         register(DisconnectC2SPacket.class);
         register(LoginC2SPacket.class);
         register(PrivateMessageC2SPacket.class);
-        register(RequestPlayerPositionC2SPacket.class);
+        register(RequestPlayerInventoryC2SPacket.class);
         register(SeenEntityC2SPacket.class);
+        register(SendPlayerInventoryC2SPacket.class);
 
         register(BreakingS2CPacket.class);
         register(ChatS2CPacket.class);
@@ -29,9 +30,12 @@ public class PacketFactory {
         register(LoginSuccessS2CPacket.class);
         register(PlayerPositionS2CPacket.class);
         register(PrivateMessageS2CPacket.class);
+        register(RequestPlayerInventoryS2CPacket.class);
+        register(SendPlayerInventoryS2CPacket.class);
         register(ServerMessageS2CPacket.class);
     }
 
+    // TODO: write as records & switch to different encoding for performance
     public static void register(Class<? extends Packet> clazz) {
         PacketId idAnnotation = clazz.getAnnotation(PacketId.class);
         if (idAnnotation == null) {

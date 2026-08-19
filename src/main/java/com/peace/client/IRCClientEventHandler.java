@@ -3,6 +3,7 @@ package com.peace.client;
 import com.peace.packets.Packet;
 import com.peace.packets.s2c.IRCUsersS2CPacket;
 import com.peace.util.BlockPos;
+import com.peace.util.IRCInventory;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -23,6 +24,9 @@ public interface IRCClientEventHandler {
     default void onIRCUserUpdate(IRCClientMain main, List<String> usernames, IRCUsersS2CPacket.Action action, boolean shouldAnnounce) {}
     default void onPositionReceive(IRCClientMain main, String username, BlockPos position) {
     }
+    default void onServerRequestInventory(IRCClientMain main, int id) {}
+    default void onReceiveInventory(IRCClientMain main, String username, IRCInventory inventory) {}
+
 
     default void tick(IRCClientMain main) {
     }

@@ -6,6 +6,7 @@ public class IRCServerConfig {
     private final String password;
 
     private final float timeoutSeconds;
+    private final float requestTimeoutSeconds;
     private final long chatCooldownMillis;
     private final long entityDespawnMillis;
 
@@ -14,6 +15,7 @@ public class IRCServerConfig {
         this.port = builder.port;
         this.password = builder.password;
         this.timeoutSeconds = builder.timeoutSeconds;
+        this.requestTimeoutSeconds = builder.requestTimeoutSeconds;
         this.chatCooldownMillis = builder.chatCooldownMillis;
         this.entityDespawnMillis = builder.entityDespawnMillis;
     }
@@ -22,6 +24,7 @@ public class IRCServerConfig {
     public int getPort() { return port; }
     public String getPassword() { return password; }
     public float getTimeoutSeconds() { return timeoutSeconds; }
+    public float getRequestTimeoutSeconds() { return requestTimeoutSeconds; }
     public long getChatCooldownMillis() { return chatCooldownMillis; }
 
     public long getEntityDespawnMillis() {
@@ -34,6 +37,7 @@ public class IRCServerConfig {
         private String password;
 
         private float timeoutSeconds = 5f;
+        private float requestTimeoutSeconds = 5f;
         private long chatCooldownMillis = 500;
         private long entityDespawnMillis = 5000;
 
@@ -53,6 +57,10 @@ public class IRCServerConfig {
         public Builder password(String password) {
             this.password = password;
             return this;
+        }
+
+        public void requestTimeoutSeconds(float requestTimeoutSeconds) {
+            this.requestTimeoutSeconds = requestTimeoutSeconds;
         }
 
         public Builder timeoutSeconds(float timeoutSeconds) {
@@ -82,6 +90,9 @@ public class IRCServerConfig {
             }
             if (timeoutSeconds <= 0) {
                 throw new IllegalStateException("timeoutSeconds must be >0");
+            }
+            if (requestTimeoutSeconds <= 0) {
+                throw new IllegalStateException("requestTimeoutSeconds must be >0");
             }
             if (chatCooldownMillis <= 0) {
                 throw new IllegalStateException("chatCooldownMillis must be >0");

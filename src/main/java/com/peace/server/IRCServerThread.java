@@ -9,6 +9,7 @@ import com.peace.packets.PacketFactory;
 import com.peace.packets.c2s.*;
 import com.peace.packets.s2c.*;
 import com.peace.util.BlockPos;
+import com.peace.util.IRCInventory;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -43,8 +44,8 @@ public class IRCServerThread implements Runnable {
     private volatile @Nullable BlockPos breakingPos;
     private volatile float breakingProgress;
 
-    // 1 second cooldown
     private volatile long lastChatMessage;
+    private volatile long lastInventoryRequest; // TODO: map a delay for this
 
     public IRCServerThread(Socket clientSocket, IRCServerMain serverMain) {
         this.clientSocket = clientSocket;
@@ -200,6 +201,25 @@ public class IRCServerThread implements Runnable {
                 this.sendPacket(new PrivateMessageS2CPacket(target.getUsername(), privateMessageC2SPacket.getMessage(), true));
             }
         }
+        if (packet instanceof RequestPlayerInventoryC2SPacket requestPlayerInventoryC2SPacket) {
+            IRCServerThread target = serverMain.getUsers(this.server).get(requestPlayerInventoryC2SPacket.getUsername());
+            if (target == null) {
+                sendServerMessage("No player with name: " + requestPlayerInventoryC2SPacket.getUsername() + " was found!");
+                return;
+            }
+            if (!target.hasFeature(VersionFeatures.INVENTORY_REQUESTS)) {
+                sendPacket(new ServerMessageS2CPacket(String.format("%s's client doesn't support inventory sharing!", target.getUsername())));
+                return;
+            }
+
+            this.serverMain.sendInventoryRequest(this, target);
+        }
+        if (packet instanceof SendPlayerInventoryC2SPacket sendPlayerInventoryC2SPacket) {
+            int id = sendPlayerInventoryC2SPacket.getId();
+            IRCInventory inventory = sendPlayerInventoryC2SPacket.getInventory();
+
+            this.serverMain.fulfillInventoryRequest(this, id, inventory);
+        }
     }
 
     public void sendServerMessage(String text) {
@@ -251,13 +271,17 @@ public class IRCServerThread implements Runnable {
     }
 
     public void disconnect(String reason) {
+        disconnect(reason, true);
+    }
+
+    public void disconnect(String reason, boolean remove) {
         if (!this.running) return;
         this.running = false;
         if (clientSocket != null && !clientSocket.isClosed() && out != null) {
             out.println(PacketFactory.serializePacket(new DisconnectS2CPacket(reason)));
         }
         try {
-            this.serverMain.remove(this);
+            if (remove) this.serverMain.remove(this);
             if (in != null) in.close();
             if (out != null) out.close();
             if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close();

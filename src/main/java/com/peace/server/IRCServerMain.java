@@ -3,10 +3,9 @@ package com.peace.server;
 import com.peace.VersionFeatures;
 import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
-import com.peace.packets.s2c.BreakingS2CPacket;
-import com.peace.packets.s2c.IRCUsersS2CPacket;
-import com.peace.packets.s2c.PlayerPositionS2CPacket;
+import com.peace.packets.s2c.*;
 import com.peace.util.BlockPos;
+import com.peace.util.IRCInventory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,12 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class IRCServerMain {
     public final int protocolVersion;
     public final Map<String, Map<String, IRCServerThread>> serverNameMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<String, EntityState>> entityStates = new ConcurrentHashMap<>();
-
     public final Set<IRCServerThread> notLoggedInSet = new HashSet<>();
 
     private final IRCServerConfig config;
@@ -29,6 +28,8 @@ public class IRCServerMain {
     private final ScheduledExecutorService tickExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private volatile boolean running;
+    private final AtomicInteger currentInventoryId;
+    private final ConcurrentHashMap<Integer, InventoryRequest> pendingRequests = new ConcurrentHashMap<>();
 
     public IRCServerMain(IRCServerConfig config) {
         this(config, PacketFactory.PROTOCOL_VERSION); // static constant
@@ -38,6 +39,7 @@ public class IRCServerMain {
         this.protocolVersion = protocolVersion;
         this.config = config;
         running = false;
+        currentInventoryId = new AtomicInteger(0);
     }
 
     public void run() throws IOException {
@@ -60,9 +62,23 @@ public class IRCServerMain {
 
     private void tick() {
         long now = System.currentTimeMillis();
-        for (IRCServerThread notLoggedIn : notLoggedInSet) {
+        Iterator<IRCServerThread> notLoggedInIt = notLoggedInSet.iterator();
+        while (notLoggedInIt.hasNext()) {
+            IRCServerThread notLoggedIn = notLoggedInIt.next();
             if (now - notLoggedIn.getConnectMillis() > config.getTimeoutSeconds() * 1000) {
-                notLoggedIn.disconnect("Login timeout!");
+                // dont remove from the list to not crash to concurrency
+                notLoggedIn.disconnect("Login timeout!", false);
+                // remove
+                notLoggedInIt.remove();
+            }
+        }
+
+        Iterator<Map.Entry<Integer, InventoryRequest>> requestIterator = pendingRequests.entrySet().iterator();
+        while (requestIterator.hasNext()) {
+            InventoryRequest request = requestIterator.next().getValue();
+            if (now - request.startMillis() > config.getRequestTimeoutSeconds() * 1000) {
+                request.requester().sendServerMessage("Request timed out!");
+                requestIterator.remove();
             }
         }
 
@@ -115,6 +131,24 @@ public class IRCServerMain {
             }
         }
     }
+
+    public void sendInventoryRequest(IRCServerThread requester, IRCServerThread target) {
+        int id = currentInventoryId.getAndIncrement();
+        target.sendPacket(new RequestPlayerInventoryS2CPacket(id));
+        pendingRequests.put(id, new InventoryRequest(requester, System.currentTimeMillis()));
+    }
+
+    public void fulfillInventoryRequest(IRCServerThread fulfiller, int id, IRCInventory inventory) {
+        InventoryRequest request = pendingRequests.get(id);
+        if (request == null) {
+            fulfiller.sendServerMessage("Invalid id for request!");
+            return;
+        }
+
+        request.requester().sendPacket(new SendPlayerInventoryS2CPacket(fulfiller.getUsername(), inventory));
+        pendingRequests.remove(id);
+    }
+
 
     public Map<String, IRCServerThread> getUsers(String server) {
         return serverNameMap.computeIfAbsent(server, (string) -> new HashMap<>());
@@ -174,11 +208,15 @@ public class IRCServerMain {
         tickExecutor.shutdownNow();
         for (Map<String, IRCServerThread> server : serverNameMap.values()) {
             for (IRCServerThread player : server.values()) {
-                player.disconnect("Shutting down");
+                player.disconnect("Shutting down", false);
             }
+            server.clear();
         }
+        serverNameMap.clear();
     }
 
     public record EntityState(BlockPos pos, long millis) {
+    }
+    public record InventoryRequest(IRCServerThread requester, long startMillis) {
     }
 }

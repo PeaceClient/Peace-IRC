@@ -5,14 +5,14 @@ import com.peace.packets.Packet;
 import com.peace.packets.PacketId;
 
 @PacketId(0x03)
-public class RequestPlayerPositionC2SPacket implements Packet {
+public class RequestPlayerInventoryC2SPacket implements Packet {
     String username;
 
-    public RequestPlayerPositionC2SPacket(String username) {
+    public RequestPlayerInventoryC2SPacket(String username) {
         this.username = username;
     }
 
-    public RequestPlayerPositionC2SPacket(JsonObject jsonObject) {
+    public RequestPlayerInventoryC2SPacket(JsonObject jsonObject) {
         this.username = jsonObject.get("username").getAsString();
     }
 

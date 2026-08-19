@@ -165,6 +165,14 @@ public class IRCClientMain {
         if (packet instanceof PrivateMessageS2CPacket privateMessageS2CPacket) {
             eventHandler.onPrivateMessage(this, privateMessageS2CPacket.getSender(), privateMessageS2CPacket.getMessage(), privateMessageS2CPacket.isOwnMessage());
         }
+
+        if (packet instanceof RequestPlayerInventoryS2CPacket requestPlayerInventoryS2CPacket) {
+            eventHandler.onServerRequestInventory(this, requestPlayerInventoryS2CPacket.getId());
+        }
+
+        if (packet instanceof SendPlayerInventoryS2CPacket sendPlayerInventoryS2CPacket) {
+            eventHandler.onReceiveInventory(this, sendPlayerInventoryS2CPacket.getUsername(), sendPlayerInventoryS2CPacket.getInventory());
+        }
     }
 
     public void doLogin() {
