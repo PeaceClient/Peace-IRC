@@ -4,6 +4,7 @@ public class IRCServerConfig {
     private final String host;
     private final int port;
     private final String password;
+    private final String callbackURI;
 
     private final float timeoutSeconds;
     private final float requestTimeoutSeconds;
@@ -14,6 +15,7 @@ public class IRCServerConfig {
         this.host = builder.host;
         this.port = builder.port;
         this.password = builder.password;
+        this.callbackURI = builder.callbackURI;
         this.timeoutSeconds = builder.timeoutSeconds;
         this.requestTimeoutSeconds = builder.requestTimeoutSeconds;
         this.chatCooldownMillis = builder.chatCooldownMillis;
@@ -23,6 +25,7 @@ public class IRCServerConfig {
     public String getHost() { return host; }
     public int getPort() { return port; }
     public String getPassword() { return password; }
+    public String getCallbackURI() { return callbackURI; }
     public float getTimeoutSeconds() { return timeoutSeconds; }
     public float getRequestTimeoutSeconds() { return requestTimeoutSeconds; }
     public long getChatCooldownMillis() { return chatCooldownMillis; }
@@ -36,6 +39,7 @@ public class IRCServerConfig {
         private String host;
         private int port;
         private String password;
+        private String callbackURI;
 
         private float timeoutSeconds = 5f;
         private float requestTimeoutSeconds = 5f;
@@ -57,6 +61,11 @@ public class IRCServerConfig {
 
         public Builder password(String password) {
             this.password = password;
+            return this;
+        }
+
+        public Builder callbackURI(String callbackURI) {
+            this.callbackURI = callbackURI;
             return this;
         }
 

@@ -52,6 +52,7 @@ public class IRCServerThread implements Runnable {
 
     @Override
     public void run() {
+        if (this.running) throw new IllegalStateException("IRCServerThread already running");
         this.serverMain.notLoggedInSet.add(this);
         this.running = true;
 
@@ -68,6 +69,12 @@ public class IRCServerThread implements Runnable {
                 } catch (EOFException exception) {
                     // graceful end
                     break;
+                }
+
+                if (length < 0) throw new IllegalArgumentException("Packet size is negative?");
+                if (length > 2000000) {
+                    this.disconnect("Packet too large! Max size: 2000000 bytes");
+                    return;
                 }
 
                 byte[] payload = new byte[length];
@@ -214,6 +221,9 @@ public class IRCServerThread implements Runnable {
             IRCInventory inventory = sendPlayerInventoryC2SPacket.getInventory();
 
             this.serverMain.fulfillInventoryRequest(this, id, inventory);
+        }
+        if (packet instanceof CustomCallbackC2SPacket customCallbackC2SPacket) {
+            this.serverMain.handleCallback(this, customCallbackC2SPacket.getData());
         }
     }
 

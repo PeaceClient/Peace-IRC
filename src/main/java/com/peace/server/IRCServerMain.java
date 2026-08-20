@@ -12,6 +12,13 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -150,6 +157,44 @@ public class IRCServerMain {
 
         request.requester().sendPacket(new SendPlayerInventoryS2CPacket(fulfiller.getUsername(), inventory));
         pendingRequests.remove(id);
+    }
+
+    public void handleCallback(IRCServerThread requester, String extraData) {
+        if (this.config.getCallbackURI() == null || this.config.getCallbackURI().trim().isEmpty()) {
+            requester.sendServerMessage("Callbacks are not defined on the server!");
+            return;
+        }
+
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build();
+
+       try {
+           String user = URLEncoder.encode(requester.getUsername(), StandardCharsets.UTF_8);
+           String server = URLEncoder.encode(requester.getServer(), StandardCharsets.UTF_8);
+           String encoded = URLEncoder.encode(extraData, StandardCharsets.UTF_8);
+
+           String data = String.format("user=%s&server=%s&data=%s", user, server, encoded);
+
+           HttpRequest request = HttpRequest.newBuilder()
+                   .uri(URI.create(this.config.getCallbackURI()))
+                   .timeout(Duration.ofSeconds(10))
+                   .header("Content-Type", "application/x-www-form-urlencoded")
+                   .POST(HttpRequest.BodyPublishers.ofString(data))
+                   .build();
+
+           HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+           requester.sendServerMessage(String.format("%d: %s", response.statusCode(), response.body()));
+       } catch (Exception e) {
+           String message = e.getMessage();
+           if (message != null) {
+               if (message.length() > 200) message = message.substring(0, 200);
+               requester.sendServerMessage("Exception: " + message);
+           } else {
+               requester.sendServerMessage("Exception of type " + e.getClass().getSimpleName());
+           }
+       }
     }
 
 
