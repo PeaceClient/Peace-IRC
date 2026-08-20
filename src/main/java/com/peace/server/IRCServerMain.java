@@ -5,7 +5,9 @@ import com.peace.packets.Packet;
 import com.peace.packets.PacketFactory;
 import com.peace.packets.s2c.*;
 import com.peace.util.IRCBlockPos;
+import com.peace.util.IRCEquipment;
 import com.peace.util.IRCInventory;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -21,7 +23,7 @@ public class IRCServerMain {
     public final int protocolVersion;
     public final Map<String, Map<String, IRCServerThread>> serverNameMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<String, EntityState>> entityStates = new ConcurrentHashMap<>();
-    public final Set<IRCServerThread> notLoggedInSet = new HashSet<>();
+    public final Set<IRCServerThread> notLoggedInSet = ConcurrentHashMap.newKeySet();
 
     private final IRCServerConfig config;
 
@@ -98,7 +100,8 @@ public class IRCServerMain {
                     playerPositions.add(new PlayerPositionS2CPacket(entry.getKey(), null));
                 } else {
                     // assume truth and send
-                    playerPositions.add(new PlayerPositionS2CPacket(entry.getKey(), entry.getValue().pos()));
+                    playerPositions.add(new PlayerPositionS2CPacket(entry.getKey(), entry.getValue().pos(),
+                            entry.getValue().health(), entry.getValue().equipment()));
                 }
             }
 
@@ -151,7 +154,7 @@ public class IRCServerMain {
 
 
     public Map<String, IRCServerThread> getUsers(String server) {
-        return serverNameMap.computeIfAbsent(server, (string) -> new HashMap<>());
+        return serverNameMap.computeIfAbsent(server, (string) -> new ConcurrentHashMap<>());
     }
 
     public void add(IRCServerThread serverThread) {
@@ -165,13 +168,19 @@ public class IRCServerMain {
         this.notLoggedInSet.remove(serverThread);
         if (server != null && username != null) {
             this.getUsers(server).remove(username);
-            if (this.getUsers(server).isEmpty()) this.serverNameMap.remove(server); // remove server from nesting
+            if (this.getUsers(server).isEmpty()) {
+                this.serverNameMap.remove(server); // remove server from nesting
+                this.entityStates.remove(server);
+            }
             this.broadcastIRCUser(username, server, IRCUsersS2CPacket.Action.Remove);
         }
     }
 
     private void broadcastIRCUser(String username, String server, IRCUsersS2CPacket.Action action) {
-        for (IRCServerThread player : getUsers(server).values()) {
+        Map<String, IRCServerThread> users = serverNameMap.get(server);
+        if (users == null) return;
+
+        for (IRCServerThread player : users.values()) {
             if (player.hasFeature(VersionFeatures.IRC_USERS_BROADCASTING)) {
                 player.sendPacket(new IRCUsersS2CPacket(List.of(username), action, true));
             }
@@ -189,15 +198,16 @@ public class IRCServerMain {
     }
 
     public Map<String, EntityState> getEntityStates(String server) {
-        return entityStates.computeIfAbsent(server, (string) -> new HashMap<>());
+        return entityStates.computeIfAbsent(server, (string) -> new ConcurrentHashMap<>());
     }
 
     public EntityState getEntityState(String server, String username) {
         return getEntityStates(server).get(username);
     }
 
-    public void report(String server, String username, IRCBlockPos pos, long now) {
-        getEntityStates(server).put(username, new EntityState(pos, now));
+    public void report(String server, String username, IRCBlockPos pos, @Nullable Float health,
+                       @Nullable IRCEquipment equipment, long now) {
+        getEntityStates(server).put(username, new EntityState(pos, health, equipment, now));
     }
 
     public IRCServerConfig getConfig() {
@@ -216,7 +226,7 @@ public class IRCServerMain {
         serverNameMap.clear();
     }
 
-    public record EntityState(IRCBlockPos pos, long millis) {
+    public record EntityState(IRCBlockPos pos, @Nullable Float health, @Nullable IRCEquipment equipment, long millis) {
     }
     public record InventoryRequest(IRCServerThread requester, long startMillis) {
     }

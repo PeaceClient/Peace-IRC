@@ -3,6 +3,7 @@ package com.peace.client;
 import com.peace.packets.Packet;
 import com.peace.packets.s2c.IRCUsersS2CPacket;
 import com.peace.util.IRCBlockPos;
+import com.peace.util.IRCEquipment;
 import com.peace.util.IRCInventory;
 import org.jspecify.annotations.Nullable;
 
@@ -22,7 +23,8 @@ public interface IRCClientEventHandler {
     void onIrcChat(IRCClientMain main, String sender, String message); // irc chat
     void onPrivateMessage(IRCClientMain main, String sender, String message, boolean isOwnMessage); // irc PM
     default void onIRCUserUpdate(IRCClientMain main, List<String> usernames, IRCUsersS2CPacket.Action action, boolean shouldAnnounce) {}
-    default void onPositionReceive(IRCClientMain main, String username, IRCBlockPos position) {
+    default void onPositionReceive(IRCClientMain main, String username, @Nullable IRCBlockPos position,
+                                   @Nullable Float health, @Nullable IRCEquipment equipment) {
     }
     default void onServerRequestInventory(IRCClientMain main, int id) {}
     default void onReceiveInventory(IRCClientMain main, String username, IRCInventory inventory) {}
