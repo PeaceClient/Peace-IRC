@@ -10,6 +10,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x06)
+@SuppressWarnings("unused")
 public class BreakingC2SPacket implements Packet {
     @Nullable IRCBlockPos position;
     float breakingProgress;

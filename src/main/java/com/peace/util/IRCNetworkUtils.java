@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class IRCNetworkUtils {
     public static void encodeString(DataOutput out, String string) throws IOException {
         byte[] bytes = string.getBytes(StandardCharsets.UTF_8);

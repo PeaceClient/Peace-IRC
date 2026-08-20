@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.List;
 
 @PacketId(0x0B)
+@SuppressWarnings("unused")
 public class IRCUsersS2CPacket implements Packet {
     List<String> usernames;
     Action action;

@@ -6,6 +6,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+@SuppressWarnings("unused")
 public class IRCEquipment {
     private static final int SLOT_COUNT = 6;
 

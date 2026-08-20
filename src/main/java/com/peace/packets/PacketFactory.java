@@ -38,7 +38,6 @@ public class PacketFactory {
         register(ServerMessageS2CPacket.class);
     }
 
-    // TODO: write as records & switch to different encoding for performance
     public static void register(Class<? extends Packet> clazz) {
         PacketId idAnnotation = clazz.getAnnotation(PacketId.class);
         if (idAnnotation == null) {

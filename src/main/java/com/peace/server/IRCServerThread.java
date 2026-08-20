@@ -40,7 +40,7 @@ public class IRCServerThread implements Runnable {
     private volatile float breakingProgress;
 
     private volatile long lastChatMessage;
-    private volatile long lastInventoryRequest; // TODO: map a delay for this
+    //private volatile long lastInventoryRequest; // TODO: map a delay for this
 
     public IRCServerThread(Socket clientSocket, IRCServerMain serverMain) {
         this.clientSocket = clientSocket;
@@ -219,13 +219,13 @@ public class IRCServerThread implements Runnable {
 
     private void writeInternal(Packet packet) throws IOException {
         if (clientSocket != null && !clientSocket.isClosed() && out != null) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream tmpOut = new DataOutputStream(baos);
+            ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+            DataOutputStream tmpOut = new DataOutputStream(byteArrayStream);
 
             PacketFactory.serializePacket(tmpOut, packet);
             tmpOut.flush();
 
-            byte[] payload = baos.toByteArray();
+            byte[] payload = byteArrayStream.toByteArray();
             out.writeInt(payload.length);
             out.write(payload);
             out.flush();

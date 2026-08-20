@@ -9,10 +9,12 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x0C)
+@SuppressWarnings("unused")
 public class PrivateMessageC2SPacket implements Packet {
     String target;
     String message;
 
+    @SuppressWarnings("unused")
     public PrivateMessageC2SPacket(String target, String message) {
         this.target = target;
         this.message = message;

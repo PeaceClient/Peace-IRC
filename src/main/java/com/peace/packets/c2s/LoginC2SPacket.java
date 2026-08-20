@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x01)
+@SuppressWarnings("unused")
 public class LoginC2SPacket implements Packet {
     String username;
     String password;

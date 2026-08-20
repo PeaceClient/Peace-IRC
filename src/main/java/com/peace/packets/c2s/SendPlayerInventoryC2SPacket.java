@@ -10,6 +10,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x10)
+@SuppressWarnings("unused")
 public class SendPlayerInventoryC2SPacket implements Packet {
     int id;
     IRCInventory inventory;

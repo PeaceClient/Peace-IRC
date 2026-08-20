@@ -11,6 +11,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x08)
+@SuppressWarnings("unused")
 public class BreakingS2CPacket implements Packet {
     @Nullable IRCBlockPos position;
     float breakingProgress;

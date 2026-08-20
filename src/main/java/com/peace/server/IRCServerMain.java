@@ -68,7 +68,7 @@ public class IRCServerMain {
         while (notLoggedInIt.hasNext()) {
             IRCServerThread notLoggedIn = notLoggedInIt.next();
             if (now - notLoggedIn.getConnectMillis() > config.getTimeoutSeconds() * 1000) {
-                // dont remove from the list to not crash to concurrency
+                // don't remove from the list to not crash to concurrency
                 notLoggedIn.disconnect("Login timeout!", false);
                 // remove
                 notLoggedInIt.remove();
@@ -118,7 +118,7 @@ public class IRCServerMain {
                     }
                 }
 
-                // TODO: batching for playerpositions!
+                // TODO: batching for player positions!
                 for (PlayerPositionS2CPacket packet : playerPositions) {
                     if (packet.getUsername().equals(player.getUsername())) continue;
                     player.sendPacket(packet);

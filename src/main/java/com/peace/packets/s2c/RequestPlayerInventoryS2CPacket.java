@@ -8,6 +8,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x0e)
+@SuppressWarnings("unused")
 public class RequestPlayerInventoryS2CPacket implements Packet {
     // Not going to include username, not a privacy issue in a normal use case
     int id;

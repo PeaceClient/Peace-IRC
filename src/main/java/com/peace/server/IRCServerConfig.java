@@ -31,6 +31,7 @@ public class IRCServerConfig {
         return entityDespawnMillis;
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
         private String host;
         private int port;

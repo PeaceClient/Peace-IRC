@@ -12,6 +12,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x04)
+@SuppressWarnings("unused")
 public class SeenEntityC2SPacket implements Packet {
     private static final int FLAG_HEALTH = 1;
     private static final int FLAG_EQUIPMENT = 1 << 1;

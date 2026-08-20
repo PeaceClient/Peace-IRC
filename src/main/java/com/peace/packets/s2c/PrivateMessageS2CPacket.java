@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x0D)
+@SuppressWarnings("unused")
 public class PrivateMessageS2CPacket implements Packet {
     String sender;
     String message;

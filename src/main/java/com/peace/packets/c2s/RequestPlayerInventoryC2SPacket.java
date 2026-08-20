@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x03)
+@SuppressWarnings("unused")
 public class RequestPlayerInventoryC2SPacket implements Packet {
     String username;
 

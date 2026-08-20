@@ -32,7 +32,7 @@ public class IRCClientMain {
 
     private boolean loggedIn;
 
-    // TODO: input validation
+    // TODO: input validation/builder for the IRCClientMain
     public IRCClientMain(String addr, int port, String username, String password, String server, IRCClientEventHandler eventHandler) {
         this.addr = addr;
         this.port = port;
@@ -44,6 +44,7 @@ public class IRCClientMain {
         this.loggedIn = false;
     }
 
+    @SuppressWarnings("unused")
     public void start() throws IOException {
         if (this.running) throw new IllegalStateException("Client is already running");
         this.running = true;
@@ -86,7 +87,9 @@ public class IRCClientMain {
                         return;
                     }
 
-                    incomingQueue.offer(packet);
+                    if (!incomingQueue.offer(packet)) {
+                        System.out.println("Incoming packet dropped, queue full!");
+                    }
                 }
             } catch (Exception exception) {
                 System.out.println("Error with reading packet");
@@ -186,18 +189,20 @@ public class IRCClientMain {
     public void sendPacket(Packet packet) {
         if (socket == null || !socket.isConnected()) throw new IllegalStateException("Socket not open on sendPacket");
         if (eventHandler.onPacketSend(this, packet)) return; // cancelled
-        outgoingQueue.offer(packet);
+        if (!outgoingQueue.offer(packet)) {
+            System.out.println("Outgoing packet dropped, queue full!");
+        }
     }
 
     private void writeInternal(Packet packet) throws IOException {
         if (socket != null && !socket.isClosed() && out != null) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream tmpOut = new DataOutputStream(baos);
+            ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+            DataOutputStream tmpOut = new DataOutputStream(byteArrayStream);
 
             PacketFactory.serializePacket(tmpOut, packet);
             tmpOut.flush();
 
-            byte[] payload = baos.toByteArray();
+            byte[] payload = byteArrayStream.toByteArray();
             out.writeInt(payload.length);
             out.write(payload);
             out.flush();

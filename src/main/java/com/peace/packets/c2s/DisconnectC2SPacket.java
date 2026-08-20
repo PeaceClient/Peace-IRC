@@ -8,6 +8,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x00)
+@SuppressWarnings("unused")
 public class DisconnectC2SPacket implements Packet {
     public DisconnectC2SPacket() {}
 

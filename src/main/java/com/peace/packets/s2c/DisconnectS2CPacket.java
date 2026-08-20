@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x0f)
+@SuppressWarnings("unused")
 public class DisconnectS2CPacket implements Packet {
     String reason;
 

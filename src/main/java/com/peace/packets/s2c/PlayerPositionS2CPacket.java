@@ -12,6 +12,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x05)
+@SuppressWarnings("unused")
 public class PlayerPositionS2CPacket implements Packet {
     private static final int FLAG_HEALTH = 1;
     private static final int FLAG_EQUIPMENT = 1 << 1;

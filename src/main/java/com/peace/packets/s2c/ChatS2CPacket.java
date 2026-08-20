@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x0A)
+@SuppressWarnings("unused")
 public class ChatS2CPacket implements Packet {
     String username;
     String message;

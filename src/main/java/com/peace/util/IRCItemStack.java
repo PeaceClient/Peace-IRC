@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 // simple data class for an ItemStack
+@SuppressWarnings("unused")
 public class IRCItemStack {
     private final String id;
     private final int count;

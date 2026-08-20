@@ -9,6 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x02)
+@SuppressWarnings("unused")
 public class ServerMessageS2CPacket implements Packet {
     String message;
 

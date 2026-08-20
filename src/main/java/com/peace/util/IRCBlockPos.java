@@ -5,10 +5,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 public class IRCBlockPos {
-    private int x;
-    private int y;
-    private int z;
+    private final int x;
+    private final int y;
+    private final int z;
 
+    @SuppressWarnings("unused")
     public IRCBlockPos(int x, int y, int z) {
         this.x = x;
         this.y = y;

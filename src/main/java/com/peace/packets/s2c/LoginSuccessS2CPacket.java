@@ -8,6 +8,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 @PacketId(0x07)
+@SuppressWarnings("unused")
 public class LoginSuccessS2CPacket implements Packet {
 
     public LoginSuccessS2CPacket() {}
